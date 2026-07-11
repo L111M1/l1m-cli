@@ -8,7 +8,7 @@
 - 默认从 L1m 项目自己的 `.env` 读取配置；当前目录或上级目录的 `.env` 可以覆盖它。
 - 在任意目录运行 `l1m` 时，默认把当前目录作为 workspace。
 - 默认进入 L1m TUI Agent；界面层独立放在 `src/l1m_cli/tui/`。
-- 任务、记忆和聊天上下文都只存在于当前进程中，退出后清空。
+- 任务、记忆和 Agent 上下文都只存在于当前进程中，退出后清空。
 
 ## 安装
 
@@ -62,21 +62,18 @@ l1m --help
 l1m config
 l1m prompt list
 l1m prompt show system
-l1m ask "hello"
 l1m agent
 l1m agent --show-steps
 l1m tui          # 显式别名，效果等同交互式 Agent TUI
 l1m tui --show-steps
 l1m agent "查看当前目录并说明这个项目是什么"
 l1m agent "创建一个 hello.txt 文件" --show-steps
-l1m chat
 ```
 
 说明：
 - `l1m` 会直接进入 L1m TUI Agent。
 - `l1m agent` 不带目标时同样进入 L1m TUI Agent；带目标时执行一次性 Agent Loop。
 - `l1m tui` 保留为显式别名，方便确认自己启动的是 TUI。
-- `l1m ask` 是单次模型问答，不启用工具。
 - `l1m agent "..."` 是单次 Agent Loop，会让模型根据目标决定是否读取文件、写文件或运行命令。
 - Agent 模式会把任务系统作为工具暴露给模型，模型可以创建任务计划、更新状态，并在终端显示 `thinking...`、行动预告、工具调用和任务进度。
 - TUI 会在模型调用 `write_file` 或 `edit_file` 时展示文件变更预览，方便你确认它实际改了什么。

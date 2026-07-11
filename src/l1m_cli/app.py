@@ -367,17 +367,6 @@ def cmd_config(_args: argparse.Namespace) -> None:
     info("tasks: in-memory only")
 
 
-def cmd_ask(args: argparse.Namespace) -> None:
-    settings = _settings()
-    _workspace_obj, memory, tasks = _runtime(settings)
-    client = AnthropicModelClient(settings)
-    answer = client.create_message(
-        system=_system_prompt(settings, memory, tasks, enabled_tools=[]),
-        messages=[{"role": "user", "content": args.prompt}],
-    )
-    info(answer)
-
-
 def cmd_agent(args: argparse.Namespace) -> None:
     if not args.goal:
         _run_agent_tui(show_steps=args.show_steps)
@@ -552,10 +541,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     config_parser = subparsers.add_parser("config", help="show current configuration")
     config_parser.set_defaults(func=cmd_config)
-
-    ask_parser = subparsers.add_parser("ask", help="ask one question")
-    ask_parser.add_argument("prompt")
-    ask_parser.set_defaults(func=cmd_ask)
 
     agent_parser = subparsers.add_parser("agent", help="run agent mode; starts TUI when no goal is given")
     agent_parser.add_argument("goal", nargs="?")
