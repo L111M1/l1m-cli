@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L1m CLI — 项目技术汇报</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F4EDE4;--bg-warm:#EDE1D2;--bg-card:#FAF6F0;
+  --bg-dark:#3E2723;--bg-darker:#2B1A15;
+  --text-heading:#2B1E12;--text-body:#4A3728;--text-muted:#8B7355;--text-light:#C4A882;
+  --accent:#C26E41;--accent-light:#D4845A;
+  --border:#D4C4B0;--border-light:#E5D8C8;
+  --done:#A0826D;--active:#C26E41;--future:#D4C4B0;
+  --success:#6B8E6B;--warning:#B8860B;
+  --code-bg:#F0E8D8;--code-border:#D4C4B0;
+}
+body{
+  background:#1a1a1a;display:flex;align-items:center;justify-content:center;
+  height:100vh;overflow:hidden;
+  font-family:'PingFang SC','Hiragino Sans GB','Noto Sans SC','Microsoft YaHei',system-ui,-apple-system,sans-serif;
+}
+.stage{width:1920px;height:1080px;position:relative;transform-origin:center center;background:var(--bg);overflow:hidden}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.slide.active{display:flex}
+
+/* Cover */
+.cover-slide{background:var(--bg-darker);color:#F4EDE4;justify-content:center;align-items:center;text-align:center}
+.cv-deco{position:absolute;border-radius:50%;pointer-events:none}
+.cv-d1{width:620px;height:620px;border:1px solid rgba(255,255,255,.06);top:50%;left:50%;transform:translate(-50%,-50%)}
+.cv-d2{width:480px;height:480px;border:1px solid rgba(255,255,255,.10);top:50%;left:50%;transform:translate(-50%,-50%)}
+.cv-d3{width:340px;height:340px;background:radial-gradient(circle,rgba(194,110,65,.08) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%)}
+.cv-dot{position:absolute;border-radius:50%;background:rgba(255,255,255,.12);pointer-events:none}
+.cv-lh{position:absolute;height:1px;background:rgba(255,255,255,.05);pointer-events:none}
+.cv-lv{position:absolute;width:1px;background:rgba(255,255,255,.05);pointer-events:none}
+.cv-badge{display:inline-block;border:1px solid rgba(194,110,65,.5);color:var(--accent-light);padding:8px 24px;border-radius:100px;font-size:18px;letter-spacing:.15em;margin-bottom:40px;position:relative;z-index:2}
+.cv-title{font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:96px;font-weight:700;letter-spacing:.02em;color:#F4EDE4;position:relative;z-index:2;line-height:1.15;margin-bottom:16px}
+.cv-sub{font-size:36px;color:rgba(244,237,228,.65);font-weight:300;letter-spacing:.1em;position:relative;z-index:2;margin-bottom:48px}
+.cv-meta{font-size:20px;color:rgba(244,237,228,.45);letter-spacing:.08em;position:relative;z-index:2}
+.cv-meta span{margin:0 20px}
+
+/* Content slides */
+.content-slide{background:var(--bg);padding:0}
+.pbar{display:flex;height:56px;border-bottom:1px solid var(--border-light);flex-shrink:0}
+.pbar .seg{flex:1;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text-muted);cursor:pointer;transition:all .3s;border-right:1px solid var(--border-light);position:relative;white-space:nowrap;padding:0 4px}
+.pbar .seg:last-child{border-right:none}
+.pbar .seg.done{background:rgba(162,130,109,.2);color:var(--done)}
+.pbar .seg.active{background:var(--active);color:#fff;font-weight:600}
+.pbar .seg.future{color:var(--future)}
+.pbar .seg:hover:not(.active){background:rgba(194,110,65,.1)}
+.sbody{flex:1;padding:48px 80px 36px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sec-label{font-size:14px;text-transform:uppercase;letter-spacing:.2em;color:var(--accent);margin-bottom:8px;font-weight:600}
+.stitle{font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:44px;font-weight:700;color:var(--text-heading);margin-bottom:32px;line-height:1.2;letter-spacing:.01em}
+.stitle-sm{font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:36px;font-weight:700;color:var(--text-heading);margin-bottom:24px;line-height:1.2}
+.pnum{position:absolute;right:48px;bottom:36px;font-size:16px;color:var(--text-light);opacity:.5;z-index:3}
+
+/* Layout */
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:40px;flex:1}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;flex:1}
+.cols2w{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;flex:1}
+
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:28px 32px}
+.card h3{font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:24px;color:var(--text-heading);margin-bottom:12px}
+.card p,.card li{font-size:20px;color:var(--text-body);line-height:1.7}
+.cicon{font-size:32px;margin-bottom:12px}
+
+/* KPIs */
+.krow{display:flex;gap:32px;margin-bottom:32px}
+.kpi{flex:1;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:24px 28px;text-align:center}
+.kpi-n{font-family:Georgia,'Times New Roman',serif;font-size:52px;font-weight:700;color:var(--accent);line-height:1.1}
+.kpi-l{font-size:17px;color:var(--text-muted);margin-top:4px}
+.kpi-s{font-size:14px;color:var(--text-light);margin-top:2px}
+
+/* Highlight box */
+.hlb{background:rgba(194,110,65,.08);border-left:4px solid var(--accent);padding:16px 24px;border-radius:0 8px 8px 0;margin-top:16px}
+.hlb p{font-size:19px;color:var(--text-body);line-height:1.6}
+.hlb-w{background:rgba(184,134,11,.08);border-left-color:var(--warning)}
+
+/* Code */
+.code{background:var(--code-bg);border:1px solid var(--code-border);border-radius:8px;padding:20px 24px;font-family:'JetBrains Mono','Cascadia Code',Consolas,monospace;font-size:16px;color:var(--text-body);line-height:1.7;overflow-x:auto;white-space:pre;margin-top:16px}
+
+/* Flow */
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}
+.fstep{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:17px;color:var(--text-body);text-align:center;white-space:nowrap}
+.fstep.hl{border-color:var(--accent);background:rgba(194,110,65,.08)}
+.farr{color:var(--accent);font-size:22px;flex-shrink:0}
+
+/* Lists */
+ul.rlist{list-style:none;padding:0}
+ul.rlist li{padding:8px 0;font-size:20px;color:var(--text-body);line-height:1.6}
+ul.rlist li::before{content:"▸";color:var(--accent);margin-right:12px}
+ul.slist{list-style:none;padding:0}
+ul.slist li{padding:6px 0;font-size:19px;color:var(--text-body);line-height:1.6}
+ul.slist li::before{content:"•";color:var(--accent);margin-right:10px}
+
+/* Tags */
+.tag{display:inline-block;font-size:15px;padding:4px 12px;border-radius:100px;margin:2px 4px}
+.tag-g{background:rgba(107,142,107,.15);color:var(--success)}
+.tag-a{background:rgba(194,110,65,.12);color:var(--accent)}
+.tag-w{background:rgba(184,134,11,.15);color:var(--warning)}
+.tag-m{background:rgba(139,115,85,.12);color:var(--text-muted)}
+
+/* Numbered cards */
+.ncard{background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:24px 28px;position:relative}
+.ncard-n{font-family:Georgia,'Times New Roman',serif;font-size:40px;font-weight:700;color:var(--accent);opacity:.3;position:absolute;top:12px;right:20px}
+.ncard h4{font-size:20px;color:var(--text-heading);margin-bottom:8px}
+.ncard p{font-size:17px;color:var(--text-body);line-height:1.6}
+
+/* Timeline */
+.tml{position:relative;padding-left:32px}
+.tml::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.tml-i{position:relative;margin-bottom:20px}
+.tml-i::before{content:'';position:absolute;left:-28px;top:8px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:3px solid var(--bg)}
+.tml-i h4{font-size:20px;color:var(--text-heading)}
+.tml-i p{font-size:17px;color:var(--text-body);line-height:1.5}
+
+/* TOC */
+.toc-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px 56px}
+.toc-i{display:flex;align-items:center;gap:24px;padding:26px 28px;border-bottom:1px solid var(--border-light);border-radius:8px;transition:all .35s ease;position:relative;overflow:hidden}
+.toc-i::before{content:"";position:absolute;left:0;top:0;width:0;height:100%;background:linear-gradient(90deg,rgba(194,110,65,.06),transparent);transition:width .4s ease}
+.toc-i:hover::before{width:100%}
+.toc-i:hover{transform:translateX(8px);border-bottom-color:var(--accent)}
+.toc-n{font-family:Georgia,'Times New Roman',serif;font-size:56px;color:var(--accent);font-weight:700;min-width:72px;line-height:1}
+.toc-t{font-size:30px;color:var(--text-body);font-weight:500;letter-spacing:.02em}
+.toc-p{font-size:20px;color:var(--text-muted);margin-left:auto;font-family:'JetBrains Mono','Cascadia Code',monospace;letter-spacing:.08em}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:18px}
+.tbl th{text-align:left;padding:12px 16px;border-bottom:2px solid var(--border);color:var(--text-heading);font-weight:600}
+.tbl td{padding:10px 16px;border-bottom:1px solid var(--border-light);color:var(--text-body)}
+.tbl tr:nth-child(even) td{background:rgba(237,225,210,.3)}
+
+/* Thanks */
+.thanks-slide{background:var(--bg-darker);color:#F4EDE4;justify-content:center;align-items:center;text-align:center}
+.thanks-slide h1{font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:84px;font-weight:700;margin-bottom:24px;color:#F4EDE4}
+.thanks-slide p{font-size:26px;color:rgba(244,237,228,.6)}
+
+/* Tree */
+.tree{font-size:18px;color:var(--text-body);line-height:2.0;white-space:pre;font-family:'JetBrains Mono','Cascadia Code',Consolas,monospace}
+.tree .d{color:var(--accent);font-weight:600}
+.tree .c{color:var(--text-muted);font-size:16px}
+
+/* Animations */
+@keyframes fs{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes countIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes bounceIn{0%{opacity:0;transform:translateY(40px)}55%{opacity:1;transform:translateY(-8px)}75%{transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes slideInUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blurIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flipUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes rotateIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatIn{0%{opacity:0;transform:translateY(30px)}60%{opacity:1;transform:translateY(-6px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.85}}
+@keyframes glowPulse{0%,100%{text-shadow:0 0 8px rgba(194,110,65,.3)}50%{text-shadow:0 0 24px rgba(194,110,65,.7),0 0 48px rgba(194,110,65,.3)}}
+
+/* Base entrance — varies by slide type */
+.slide.active .sbody>*{animation:fs .55s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .sbody>:nth-child(1){animation-delay:.04s}
+.slide.active .sbody>:nth-child(2){animation-delay:.09s}
+.slide.active .sbody>:nth-child(3){animation-delay:.14s}
+.slide.active .sbody>:nth-child(4){animation-delay:.19s}
+.slide.active .sbody>:nth-child(5){animation-delay:.24s}
+.slide.active .sbody>:nth-child(6){animation-delay:.29s}
+.slide.active .sbody>:nth-child(7){animation-delay:.34s}
+.slide.active .sbody>:nth-child(8){animation-delay:.39s}
+.slide.active .sbody>:nth-child(9){animation-delay:.44s}
+.slide.active .sbody>:nth-child(10){animation-delay:.49s}
+.slide.active .sbody>:nth-child(11){animation-delay:.54s}
+.slide.active .sbody>:nth-child(12){animation-delay:.59s}
+
+.dense-page.active .sbody>*{animation:blurIn .5s cubic-bezier(.22,.61,.36,1) backwards}
+.defense-dark.active .sbody>*{animation:slideInUp .5s cubic-bezier(.22,.61,.36,1) backwards}
+
+/* Section label & titles — distinct entrances */
+.slide.active .sec-label{animation:slideInLeft .45s cubic-bezier(.22,.61,.36,1) .05s backwards!important}
+.slide.active .stitle{animation:slideInUp .55s cubic-bezier(.22,.61,.36,1) .08s backwards!important}
+.slide.active .stitle-sm{animation:slideInUp .5s cubic-bezier(.22,.61,.36,1) .08s backwards!important}
+
+/* Cards flip up */
+.slide.active .card{animation:flipUp .5s cubic-bezier(.22,.61,.36,1) backwards!important}
+.slide.active .card:nth-child(1){animation-delay:.1s}
+.slide.active .card:nth-child(2){animation-delay:.2s}
+.slide.active .card:nth-child(3){animation-delay:.3s}
+.slide.active .card:nth-child(4){animation-delay:.4s}
+
+/* Number cards pop in */
+.slide.active .ncard{animation:popIn .45s cubic-bezier(.22,.61,.36,1) backwards!important}
+.slide.active .ncard:nth-child(1){animation-delay:.1s}
+.slide.active .ncard:nth-child(2){animation-delay:.19s}
+.slide.active .ncard:nth-child(3){animation-delay:.28s}
+.slide.active .ncard:nth-child(4){animation-delay:.37s}
+
+/* Code blocks rotate in */
+.slide.active .code{animation:rotateIn .55s cubic-bezier(.22,.61,.36,1) backwards!important;animation-delay:.25s}
+
+/* Highlight boxes slide from right */
+.slide.active .hlb{animation:slideInRight .45s cubic-bezier(.22,.61,.36,1) backwards!important;animation-delay:.3s}
+
+/* Flow steps float in staggered */
+.slide.active .fstep{animation:floatIn .45s cubic-bezier(.22,.61,.36,1) backwards!important}
+.slide.active .fstep:nth-child(1){animation-delay:.1s}
+.slide.active .fstep:nth-child(2){animation-delay:.17s}
+.slide.active .fstep:nth-child(3){animation-delay:.24s}
+.slide.active .fstep:nth-child(4){animation-delay:.31s}
+.slide.active .fstep:nth-child(5){animation-delay:.38s}
+.slide.active .fstep:nth-child(6){animation-delay:.45s}
+
+/* Table rows blur in staggered */
+.slide.active .tbl tr{animation:blurIn .4s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .tbl tr:nth-child(1){animation-delay:.1s}
+.slide.active .tbl tr:nth-child(2){animation-delay:.17s}
+.slide.active .tbl tr:nth-child(3){animation-delay:.24s}
+.slide.active .tbl tr:nth-child(4){animation-delay:.31s}
+.slide.active .tbl tr:nth-child(5){animation-delay:.38s}
+
+/* Defense nodes pop in */
+.defense-dark.active .defense-node{animation:popIn .45s cubic-bezier(.22,.61,.36,1) backwards!important}
+.defense-dark.active .defense-node:nth-child(1){animation-delay:.1s}
+.defense-dark.active .defense-node:nth-child(2){animation-delay:.18s}
+.defense-dark.active .defense-node:nth-child(3){animation-delay:.26s}
+.defense-dark.active .defense-node:nth-child(4){animation-delay:.34s}
+.defense-dark.active .defense-node:nth-child(5){animation-delay:.42s}
+
+/* Tree/code ambient */
+.code{transition:box-shadow .4s ease}
+.code:hover{box-shadow:0 0 20px rgba(194,110,65,.12)}
+
+/* Cover animations */
+.cover-slide .cv-deco{animation:rotate 80s linear infinite}
+.cover-slide .cv-d1{animation-duration:90s}
+.cover-slide .cv-d2{animation-duration:70s;animation-direction:reverse}
+.cover-slide .cv-d3{animation-duration:60s}
+.cover-slide.active .cv-badge{animation:popIn .6s cubic-bezier(.22,.61,.36,1) .1s backwards}
+.cover-slide.active .cv-title{animation:slideInLeft .8s cubic-bezier(.22,.61,.36,1) .2s backwards}
+.cover-slide.active .cv-sub{animation:blurIn .7s cubic-bezier(.22,.61,.36,1) .35s backwards}
+.cover-slide.active .cv-meta{animation:fadeIn .6s ease .5s backwards}
+.cover-slide.active .cv-metrics{animation:fadeIn .8s ease .6s backwards}
+.cover-slide.active .cv-metric{animation:countIn .6s cubic-bezier(.22,.61,.36,1) backwards}
+.cover-slide.active .cv-metric:nth-child(1){animation-delay:.65s}
+.cover-slide.active .cv-metric:nth-child(2){animation-delay:.75s}
+.cover-slide.active .cv-metric:nth-child(3){animation-delay:.85s}
+.cover-slide .cv-dot{animation:pulse 3s ease-in-out infinite}
+.cover-slide .cv-dot:nth-child(4){animation-delay:.5s}
+.cover-slide .cv-dot:nth-child(5){animation-delay:1s}
+.cover-slide .cv-dot:nth-child(6){animation-delay:1.5s}
+.cover-slide .cv-dot:nth-child(7){animation-delay:2s}
+.cover-slide .cv-dot:nth-child(8){animation-delay:.8s}
+
+/* Card hover */
+.card,.ncard,.kpi{transition:transform .35s cubic-bezier(.22,.61,.36,1),box-shadow .35s ease}
+.card:hover,.ncard:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(59,36,29,.1)}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(59,36,29,.08)}
+
+/* KPI number animation */
+.slide.active .kpi-n{animation:countIn .5s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .kpi:nth-child(1) .kpi-n{animation-delay:.15s}
+.slide.active .kpi:nth-child(2) .kpi-n{animation-delay:.25s}
+.slide.active .kpi:nth-child(3) .kpi-n{animation-delay:.35s}
+.slide.active .kpi:nth-child(4) .kpi-n{animation-delay:.45s}
+
+/* Capability big number */
+.slide.active .capability .big{animation:slideInRight .6s cubic-bezier(.22,.61,.36,1) .25s backwards}
+.slide.active .capability:nth-child(2) .big{animation-delay:.35s}
+.slide.active .capability:nth-child(3) .big{animation-delay:.45s}
+
+/* Flow arrow pulse */
+@keyframes arrowPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.farr{animation:arrowPulse 2s ease-in-out infinite}
+
+/* Number card background number — ambient */
+
+/* Progress bar segment transition */
+.pbar .seg{transition:all .5s ease}
+
+/* Defense node */
+.defense-node{transition:transform .35s ease,box-shadow .35s ease}
+.defense-node:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.15)}
+
+/* Capability card hover */
+.capability{transition:transform .35s ease,box-shadow .35s ease}
+.capability:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(59,36,29,.1)}
+
+/* Roadmap phase hover */
+.road-phase{transition:transform .35s ease,box-shadow .35s ease}
+.road-phase:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.2)}
+.road-phase .phase{animation:pulse 3s ease-in-out infinite}
+.road-phase:nth-child(2) .phase{animation-delay:1s}
+.road-phase:nth-child(3) .phase{animation-delay:2s}
+.road-phase:nth-child(4) .phase{animation-delay:3s}
+/* Thanks slide */
+.thanks-slide.active h1{animation:bounceIn .8s cubic-bezier(.22,.61,.36,1) .2s backwards}
+.thanks-slide.active p{animation:blurIn .7s ease .5s backwards}
+
+/* TOC item staggered entrance */
+.slide.active .toc-i{animation:slideInLeft .5s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .toc-i:nth-child(1){animation-delay:.1s}
+.slide.active .toc-i:nth-child(2){animation-delay:.18s}
+.slide.active .toc-i:nth-child(3){animation-delay:.26s}
+.slide.active .toc-i:nth-child(4){animation-delay:.34s}
+.slide.active .toc-i:nth-child(5){animation-delay:.42s}
+
+/* Benchmark tag hover */
+.bench{transition:transform .25s ease,background .25s ease}
+.bench:hover{transform:translateY(-2px);background:rgba(107,142,107,.15)}
+
+/* Tag hover */
+.tag{transition:transform .2s ease}
+.tag:hover{transform:scale(1.08)}
+
+/* Safety layer hover */
+.slayer{transition:transform .3s ease,border-color .3s ease}
+.slayer:hover{transform:translateX(6px)}
+
+/* Shimmer effect for highlighted box */
+@keyframes shimmerBorder{0%{border-left-color:var(--accent)}50%{border-left-color:var(--accent-light)}100%{border-left-color:var(--accent)}}
+.hlb:not(.hlb-w){animation:shimmerBorder 4s ease-in-out infinite}
+
+/* Extra ambient animations */
+.card .cicon{animation:breathe 4s ease-in-out infinite}
+.slide.active .tml-i{animation:slideInLeft .45s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .tml-i:nth-child(1){animation-delay:.1s}
+.slide.active .tml-i:nth-child(2){animation-delay:.18s}
+.slide.active .tml-i:nth-child(3){animation-delay:.26s}
+.slide.active .tml-i:nth-child(4){animation-delay:.34s}
+.slide.active .bench{animation:popIn .35s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .bench:nth-child(1){animation-delay:.15s}
+.slide.active .bench:nth-child(2){animation-delay:.22s}
+.slide.active .bench:nth-child(3){animation-delay:.29s}
+.slide.active .bench:nth-child(4){animation-delay:.36s}
+.slide.active .slayer{animation:slideInRight .4s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .slayer:nth-child(1){animation-delay:.08s}
+.slide.active .slayer:nth-child(2){animation-delay:.16s}
+.slide.active .slayer:nth-child(3){animation-delay:.24s}
+.slide.active .slayer:nth-child(4){animation-delay:.32s}
+.slide.active .ncard .ncard-n{animation:scaleIn .5s cubic-bezier(.22,.61,.36,1) .4s backwards}
+.defense-dark .sec-label{animation:glowPulse 3s ease-in-out infinite!important}
+.slide.active .rlist li{animation:floatIn .4s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .rlist li:nth-child(1){animation-delay:.12s}
+.slide.active .rlist li:nth-child(2){animation-delay:.19s}
+.slide.active .rlist li:nth-child(3){animation-delay:.26s}
+.slide.active .rlist li:nth-child(4){animation-delay:.33s}
+.slide.active .slist li{animation:slideInUp .35s cubic-bezier(.22,.61,.36,1) backwards}
+.slide.active .slist li:nth-child(1){animation-delay:.1s}
+.slide.active .slist li:nth-child(2){animation-delay:.17s}
+.slide.active .slist li:nth-child(3){animation-delay:.24s}
+.slide.active .slist li:nth-child(4){animation-delay:.31s}
+
+/* Circular background transition overlay */
+.tr-overlay{position:absolute;z-index:99;pointer-events:none;width:2900px;height:2900px;border-radius:50%;top:-1450px;left:50%;margin-left:-1450px;transform:scale(0);transition:transform .65s cubic-bezier(.4,0,.2,1)}
+.tr-overlay.go{transform:scale(1)}
+
+/* Safety layers */
+.slayers{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.slayer{padding:12px 16px;background:var(--bg-card);border-radius:0 8px 8px 0;font-size:17px}
+.slayer strong{display:block;margin-bottom:2px}
+.slayer span{font-size:15px;color:var(--text-muted)}
+.slayer.l1{border-left:3px solid var(--success)}
+.slayer.l2{border-left:3px solid var(--warning)}
+.slayer.l3{border-left:3px solid var(--accent)}
+.slayer.l4{border-left:3px solid #c0392b}
+
+/* Nav hint */
+.nhint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:1000;opacity:.35;transition:opacity .3s;pointer-events:none}
+.nhint:hover{opacity:.7}
+.nkey{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);padding:6px 12px;border-radius:6px;font-size:13px}
+
+/* Benchmark */
+.bench-row{display:flex;gap:12px;flex-wrap:wrap}
+.bench{background:rgba(107,142,107,.08);border:1px solid rgba(107,142,107,.2);border-radius:8px;padding:8px 16px;font-size:16px;color:var(--text-body)}
+
+/* ── Defense edition: stronger stage presence & denser editorial rhythm ── */
+.content-slide{
+  background:
+    radial-gradient(circle at 88% 12%,rgba(194,110,65,.13),transparent 24%),
+    linear-gradient(135deg,rgba(255,255,255,.18),transparent 42%),var(--bg);
+}
+.content-slide::before{
+  content:attr(data-chapter);position:absolute;right:58px;bottom:12px;z-index:0;
+  font-family:Georgia,'Times New Roman',serif;font-size:260px;line-height:1;font-weight:700;
+  color:rgba(194,110,65,.055);letter-spacing:-.08em;pointer-events:none;
+}
+.content-slide::after{
+  content:"";position:absolute;right:76px;top:116px;width:210px;height:210px;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(194,110,65,.24) 2px,transparent 2px);
+  background-size:18px 18px;opacity:.24;mask-image:linear-gradient(135deg,#000,transparent 72%);
+}
+.pbar{height:48px;background:rgba(250,246,240,.62);backdrop-filter:blur(10px);position:relative;z-index:4}
+.pbar .seg{font-size:14px;letter-spacing:.02em}
+.sbody{padding:50px 86px 58px;z-index:1}
+.sec-label{font-size:16px;letter-spacing:.24em;margin-bottom:10px}
+.stitle{font-size:56px;line-height:1.08;margin-bottom:28px;max-width:1450px}
+.stitle-sm{font-size:42px}
+.card,.ncard,.kpi{position:relative;overflow:hidden;background:rgba(250,246,240,.92);border-radius:6px}
+.card::before,.ncard::before,.kpi::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:linear-gradient(90deg,var(--accent),transparent 72%)}
+.card{padding:32px 36px}
+.card h3{font-size:29px;margin-bottom:16px}
+.card p,.card li{font-size:22px;line-height:1.72}
+ul.rlist li{font-size:22px;line-height:1.62;padding:9px 0}
+ul.slist li{font-size:21px;line-height:1.62;padding:7px 0}
+.cols2,.cols2w{gap:34px}.cols3{gap:26px}
+.krow{gap:24px;margin-bottom:26px}
+.kpi{padding:28px 24px}.kpi-n{font-size:66px}.kpi-l{font-size:20px}.kpi-s{font-size:15px}
+.ncard{padding:30px 32px}.ncard h4{font-size:25px}.ncard p{font-size:19px;line-height:1.65}.ncard-n{font-size:56px;opacity:.18}
+.tbl{font-size:19px}.tbl th{font-size:18px;padding:13px 16px}.tbl td{padding:12px 16px}
+.fstep{font-size:19px;padding:14px 20px;border-radius:6px}.flow{gap:12px}
+.hlb{padding:20px 26px}.hlb p{font-size:21px}
+.pnum{font-family:'JetBrains Mono','Cascadia Code',monospace;font-size:15px;letter-spacing:.12em;opacity:.7}
+
+/* Alternating dark editorial spreads — class-based */
+.defense-dark{
+  --text-heading:#F5EBDD;--text-body:#E7D7C6;--text-muted:#BFA487;--text-light:#8D745E;
+  --border:#6A4A3C;--border-light:rgba(244,237,228,.13);--bg-card:rgba(255,255,255,.055);
+  background:
+    radial-gradient(circle at 80% 18%,rgba(194,110,65,.28),transparent 30%),
+    linear-gradient(120deg,#2B1A15,#3B241D 58%,#251511);color:var(--text-body);
+}
+.defense-dark::before{color:rgba(255,255,255,.045)}
+.defense-dark .pbar{background:rgba(35,20,15,.6)}
+.defense-dark .card,.defense-dark .ncard,.defense-dark .kpi{background:rgba(255,255,255,.055);border-color:rgba(244,237,228,.13)}
+.defense-dark code{color:#F1B489}
+.defense-dark .defense-node h4{color:#2B1E12}
+.defense-dark .defense-node p{color:#6E5847}
+.defense-dark .defense-node .hlb p{color:#6E5847}
+.defense-dark .defense-node{display:flex;flex-direction:column}
+.defense-dark .defense-node .hlb{margin-top:auto!important}
+
+/* Cover: asymmetrical defense composition */
+.cover-slide{align-items:flex-start;text-align:left;padding:92px 118px;background:
+  radial-gradient(circle at 75% 44%,rgba(194,110,65,.24),transparent 24%),
+  linear-gradient(118deg,#21120F 0%,#3A211A 56%,#1D100D 100%)}
+.cover-slide::after{content:"L1M";position:absolute;right:-42px;bottom:-90px;font-family:Georgia,serif;font-size:390px;font-weight:700;letter-spacing:-.08em;color:rgba(255,255,255,.028)}
+.cv-badge{border-radius:3px;margin-bottom:34px;font-family:'JetBrains Mono','Cascadia Code',monospace;font-size:17px}
+.cv-title{font-size:142px;line-height:.95;margin-bottom:28px;letter-spacing:-.035em}
+.cv-sub{font-family:Georgia,'Noto Serif SC',serif;font-size:46px;line-height:1.25;max-width:980px;color:rgba(244,237,228,.82);letter-spacing:.02em;margin-bottom:34px}
+.cv-meta{font-size:18px;display:flex;gap:18px;align-items:center}.cv-meta span{margin:0}
+.cv-metrics{display:flex;gap:56px;margin-top:70px;position:relative;z-index:2}
+.cv-metric{min-width:150px;border-top:2px solid rgba(194,110,65,.7);padding-top:14px}
+.cv-metric b{display:block;font-family:Georgia,serif;font-size:40px;color:#F4EDE4}.cv-metric span{font-size:15px;color:rgba(244,237,228,.48);letter-spacing:.08em}
+.defense-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;align-items:stretch;margin-top:18px;position:relative}
+.defense-flow::before{content:"";position:absolute;left:8%;right:8%;top:62px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);z-index:0}
+.defense-node{position:relative;z-index:1;background:rgba(250,246,240,.95);border:1px solid var(--border-light);padding:24px 22px 28px;min-height:220px}
+.defense-node b{display:flex;width:54px;height:54px;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-family:Georgia,serif;font-size:26px;margin-bottom:24px}
+.defense-node h4{font-family:Georgia,'Noto Serif SC',serif;font-size:25px;color:var(--text-heading);margin-bottom:10px}.defense-node p{font-size:18px;line-height:1.6;color:var(--text-muted)}
+.loop-stage{display:grid;grid-template-columns:1.05fr 1fr;gap:42px;flex:1;align-items:stretch}
+.loop-visual{position:relative;display:grid;place-items:center;min-height:560px;background:radial-gradient(circle,rgba(194,110,65,.13),transparent 58%)}
+.loop-ring{position:absolute;border:1px solid rgba(194,110,65,.32);border-radius:50%}.loop-ring.r1{width:510px;height:510px}.loop-ring.r2{width:380px;height:380px}.loop-ring.r3{width:250px;height:250px;background:var(--accent);border:none;display:grid;place-items:center;text-align:center;color:white;font-family:Georgia,serif;font-size:34px;line-height:1.2}
+.loop-pill{position:absolute;background:var(--bg-card);border:1px solid var(--border);padding:12px 18px;font-size:18px;color:var(--text-heading);min-width:150px;text-align:center}.lp1{top:34px}.lp2{right:10px;top:244px}.lp3{bottom:30px}.lp4{left:10px;top:244px}
+.capability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;flex:1}.capability{position:relative;padding:38px 34px;background:var(--bg-card);border:1px solid var(--border-light);overflow:hidden}.capability::after{content:attr(data-no);position:absolute;right:-8px;bottom:-36px;font-family:Georgia,serif;font-size:170px;font-weight:700;color:rgba(194,110,65,.08)}.capability h3{font-family:Georgia,'Noto Serif SC',serif;font-size:31px;margin-bottom:18px;color:var(--text-heading)}.capability p{font-size:21px;line-height:1.7;color:var(--text-body)}.capability .big{font-family:Georgia,serif;font-size:72px;color:var(--accent);line-height:1;margin:34px 0 12px}
+.roadmap{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;flex:1}.road-phase{padding:24px 20px;border-top:5px solid var(--accent);background:rgba(255,255,255,.055);position:relative}.road-phase .phase{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;color:#F1B489}.road-phase h3{font-family:Georgia,'Noto Serif SC',serif;font-size:26px;color:#F5EBDD;margin:10px 0}.road-phase p,.road-phase li{font-size:16px;line-height:1.55;color:#DCC9B7}.road-phase ul{padding-left:18px}
+
+/* Dense-page safety: keep projection text readable without clipping */
+.dense-page .sbody{padding:36px 86px 42px}
+.dense-page .stitle{font-size:48px;margin-bottom:20px}
+.dense-page .card{padding:22px 26px}
+.dense-page .card h3{font-size:24px;margin-bottom:10px}
+.dense-page .card p,.dense-page .card li,.dense-page .slist li,.dense-page .rlist li{font-size:18px;line-height:1.48;padding-top:4px;padding-bottom:4px}
+.dense-page .cols2{gap:24px}
+.dense-page .tml-i{margin-bottom:10px}
+.dense-page .slayer{padding:9px 13px}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="stage" id="stage">
+<div class="tr-overlay"></div>
+
+<!-- S1: COVER -->
+<section class="slide cover-slide active" data-chapter="0">
+<div class="cv-deco cv-d1"></div><div class="cv-deco cv-d2"></div><div class="cv-deco cv-d3"></div>
+<div class="cv-dot" style="width:4px;height:4px;top:18%;left:22%"></div>
+<div class="cv-dot" style="width:3px;height:3px;top:25%;right:28%"></div>
+<div class="cv-dot" style="width:5px;height:5px;bottom:30%;left:35%"></div>
+<div class="cv-dot" style="width:3px;height:3px;bottom:22%;right:20%"></div>
+<div class="cv-dot" style="width:4px;height:4px;top:40%;right:15%"></div>
+<div class="cv-lh" style="top:30%;left:15%;width:18%"></div>
+<div class="cv-lh" style="bottom:28%;right:12%;width:14%"></div>
+<div class="cv-lv" style="left:18%;top:20%;height:60%"></div>
+<div class="cv-lv" style="right:20%;top:15%;height:70%"></div>
+<div class="cv-badge">GRADUATION DEFENSE · 2026</div>
+<h1 class="cv-title">L1m CLI</h1>
+<p class="cv-sub">面向智能执行的 CLI Agent<br>设计与实现</p>
+<div class="cv-meta"><span>项目答辩</span><span>·</span><span>v0.1.0</span><span>·</span><span>2026-07-14</span></div>
+<div class="cv-metrics">
+  <div class="cv-metric"><b>17</b><span>AGENT TOOLS</span></div>
+  <div class="cv-metric"><b>3</b><span>AGENT ROLES</span></div>
+  <div class="cv-metric"><b>155</b><span>TESTS PASSED</span></div>
+</div>
+</section>
+
+<!-- S2: TOC -->
+<section class="slide content-slide" data-chapter="0"><div class="pbar" id="pb2"></div><div class="sbody" style="justify-content:center">
+<div class="sec-label">CONTENTS</div><h2 class="stitle">目录</h2>
+<div class="toc-grid" style="margin-top:36px;width:100%">
+<div class="toc-i"><span class="toc-n">01</span><span class="toc-t">研究背景与项目目标</span><span class="toc-p">WHY</span></div>
+<div class="toc-i"><span class="toc-n">02</span><span class="toc-t">系统架构与运行机制</span><span class="toc-p">HOW</span></div>
+<div class="toc-i"><span class="toc-n">03</span><span class="toc-t">核心能力与关键实现</span><span class="toc-p">CORE</span></div>
+<div class="toc-i"><span class="toc-n">04</span><span class="toc-t">测试验证与项目成果</span><span class="toc-p">PROOF</span></div>
+<div class="toc-i"><span class="toc-n">05</span><span class="toc-t">不足、改进与未来展望</span><span class="toc-p">NEXT</span></div>
+</div>
+<div class="pnum">2 / 24</div>
+</div></section>
+
+<!-- S3: 项目概览 (1/2) -->
+<section class="slide content-slide" data-chapter="1"><div class="pbar" id="pb3"></div><div class="sbody">
+<div class="sec-label">PROJECT OVERVIEW</div><h2 class="stitle">项目概览</h2>
+<div class="krow">
+<div class="kpi"><div class="kpi-n">3.11+</div><div class="kpi-l">Python</div><div class="kpi-s">最低版本要求</div></div>
+<div class="kpi"><div class="kpi-n">17</div><div class="kpi-l">工具</div><div class="kpi-s">Lead Agent 工作台</div></div>
+<div class="kpi"><div class="kpi-n">155</div><div class="kpi-l">测试用例</div><div class="kpi-s">全部通过</div></div>
+<div class="kpi"><div class="kpi-n">3</div><div class="kpi-l">Agent 角色</div><div class="kpi-s">Lead / Teammate / Reviewer</div></div>
+</div>
+<div class="cols2">
+<div class="card">
+<h3>定位</h3>
+<p>面向开发者的 <strong>CLI Agent 学习项目</strong>，深入理解模型调用、工具执行、上下文管理、多 Agent 协作、权限控制和终端交互。</p>
+<div class="hlb" style="margin-top:16px"><p><strong>核心理念</strong>：不是"一问一答"的聊天 CLI，而是持续 TUI Agent——反复请求模型、执行工具、回注结果、维护任务和上下文，并可创建后台 teammate。</p></div>
+</div>
+<div class="card">
+<h3>项目构成</h3>
+<p style="font-size:20px;color:var(--text-muted);margin-bottom:18px">严格遵循 <strong style="color:var(--accent)">ReAct 框架</strong>（Reasoning + Acting）设计范式，以 Anthropic 官方 SDK 为模型接口，自研 Agent Runtime 组件体系：</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>Prompt 管理系统</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>Task 任务面板</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>工具系统 (17 tools)</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>Context 上下文管理</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>Hook 扩展机制</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>多 Agent 协作</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>权限与安全控制</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text-body);padding:6px 0"><span style="width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0"></span>TUI 终端交互</div>
+</div>
+<div class="hlb" style="margin-top:14px"><p><strong>设计理念</strong>：模型负责推理（Reasoning），工具负责行动（Acting），循环往复直至任务收敛——每个组件围绕这一核心闭环设计。</p></div>
+</div>
+</div>
+<div class="pnum">3 / 24</div>
+</div></section>
+
+<!-- S4: 项目概览 (2/2) — 研究问题 -->
+<section class="slide content-slide" data-chapter="1"><div class="pbar" id="pb4"></div><div class="sbody">
+<div class="sec-label">RESEARCH QUESTION</div><h2 class="stitle">从“会回答”到“能完成”</h2>
+<div class="cols2w">
+<div class="card" style="display:flex;flex-direction:column;justify-content:space-between">
+<div>
+<h3>普通聊天模型的能力断点</h3>
+<p style="font-size:28px;line-height:1.65">模型可以给出建议，却无法自然地进入项目环境、持续执行、验证结果并处理失败。</p>
+</div>
+<div class="hlb" style="margin-top:28px"><p><strong>核心问题</strong>：如何把一次回答，扩展为一个有状态、可操作、可审计的执行闭环？</p></div>
+</div>
+<div style="display:grid;grid-template-rows:repeat(3,1fr);gap:18px">
+<div class="ncard"><div class="ncard-n">01</div><h4>感知环境</h4><p>读取 workspace、理解上下文与任务状态，而不是脱离项目猜测。</p></div>
+<div class="ncard"><div class="ncard-n">02</div><h4>采取行动</h4><p>通过工具读写文件、运行命令，并把真实结果重新交给模型判断。</p></div>
+<div class="ncard"><div class="ncard-n">03</div><h4>持续收敛</h4><p>在权限、上下文和协作机制约束下，循环执行直至形成可验证结果。</p></div>
+</div>
+</div>
+<div class="hlb hlb-w" style="margin-top:24px"><p><strong>项目定位</strong>：L1m CLI 不是另一个聊天壳，而是一套面向 Windows 终端的轻量 Agent Runtime 原型。</p></div>
+<div class="pnum">4 / 24</div>
+</div></section>
+
+<!-- S5: 项目目录与模块职责 (1/2) — 目录树 -->
+<section class="slide content-slide" data-chapter="2"><div class="pbar" id="pb5"></div><div class="sbody">
+<div class="sec-label">ARCHITECTURE</div><h2 class="stitle">项目目录与模块职责</h2>
+<div class="cols2">
+<div>
+<div class="tree"><span class="d">L1m-cli/</span>
+├─ <span class="d">pyproject.toml</span>         <span class="c">包元数据、依赖和 l1m 入口</span>
+├─ <span class="d">.env / .env.example</span>     <span class="c">运行配置</span>
+├─ <span class="d">prompts/</span>                <span class="c">系统、压缩、teammate、reviewer 提示词</span>
+├─ <span class="d">src/l1m_cli/</span>
+│  ├─ __main__.py
+│  ├─ app.py              <span class="c">CLI 参数、控制台、装配</span>
+│  ├─ config.py            <span class="c">配置加载与合并</span>
+│  ├─ anthropic_client.py  <span class="c">SDK 封装与重试</span>
+│  ├─ <span class="d">core/</span>
+│  │  ├─ agent_loop.py     <span class="c">模型—工具多轮循环</span>
+│  │  ├─ tools.py          <span class="c">工具定义/执行/显示</span>
+│  │  ├─ hooks.py          <span class="c">pre/post/stop Hook</span>
+│  │  ├─ permissions.py    <span class="c">权限请求和硬拒绝</span>
+│  │  ├─ context_manager.py<span class="c">历史/usage/估算/压缩</span>
+│  │  ├─ compact.py        <span class="c">压缩模型调用</span>
+│  │  ├─ agent_team.py     <span class="c">子Agent/消息总线/reviewer</span>
+│  │  ├─ task_system.py    <span class="c">内存任务面板</span>
+│  │  └─ ...</div>
+</div>
+<div>
+<div class="tree" style="margin-top:0">│  ├─ <span class="d">core/</span> (续)
+│  │  ├─ prompt_manager.py <span class="c">Prompt 加载/拼接/缓存</span>
+│  │  ├─ completion_review.<span class="c">py 可选最终验收</span>
+│  │  ├─ memory.py         <span class="c">进程内记忆</span>
+│  │  └─ workspace.py      <span class="c">路径约束与逃逸防护</span>
+│  └─ <span class="d">tui/</span>
+│     ├─ shell.py          <span class="c">默认 TUI 运行路径</span>
+│     ├─ renderer.py       <span class="c">面板/状态栏/ANSI 输出</span>
+│     ├─ input_box.py      <span class="c">prompt-toolkit 多行输入</span>
+│     └─ markdown.py       <span class="c">轻量 Markdown→终端文本</span>
+└─ <span class="d">tests/</span>                   <span class="c">155 个测试 / 15 个文件</span></div>
+<div class="card" style="margin-top:16px">
+<h3>模块数量统计</h3>
+<div class="krow" style="margin-bottom:0">
+<div class="kpi"><div class="kpi-n">11</div><div class="kpi-l">core/ 模块</div></div>
+<div class="kpi"><div class="kpi-n">4</div><div class="kpi-l">tui/ 模块</div></div>
+<div class="kpi"><div class="kpi-n">15</div><div class="kpi-l">测试文件</div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pnum">5 / 24</div>
+</div></section>
+
+<!-- S6: 项目目录与模块职责 (2/2) — 依赖方向与架构债务 -->
+<section class="slide content-slide defense-dark dense-page" data-chapter="2"><div class="pbar" id="pb6"></div><div class="sbody">
+<div class="sec-label">ARCHITECTURE</div><h2 class="stitle">模块职责 — 依赖方向与架构债务</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:20px">
+<h3>主要依赖方向</h3>
+<div class="flow" style="flex-direction:column;align-items:flex-start;gap:6px">
+<div style="display:flex;align-items:center;gap:8px"><div class="fstep hl">app.py / tui/shell.py</div><span style="font-size:17px;color:var(--text-muted)">装配 AgentLoop，依赖全部 core 模块</span></div>
+<div style="font-size:20px;color:var(--accent);padding-left:40px">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><div class="fstep">AgentLoop</div><span style="font-size:17px;color:var(--text-muted)">只依赖 模型客户端 + 工具注册表 + Hook</span></div>
+<div style="font-size:20px;color:var(--accent);padding-left:40px">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><div class="fstep">Task / Team / Permission</div><span style="font-size:17px;color:var(--text-muted)">通过 工具/Hook/事件回调 接入</span></div>
+<div style="font-size:20px;color:var(--accent);padding-left:40px">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><div class="fstep">AgentTeam</div><span style="font-size:17px;color:var(--text-muted)">为子Agent创建独立的 Loop/客户端/工具/上下文</span></div>
+</div>
+</div>
+<div class="hlb hlb-w"><p><strong>关键设计</strong>：AgentLoop 不直接了解 Task、Team、Permission 或 TUI——通过工具、Hook、事件回调及外部事件提供器接入，保持核心循环解耦。</p></div>
+</div>
+<div>
+<div class="card" style="border-color:var(--warning);margin-bottom:16px">
+<h3>明确架构债务</h3>
+<p><code>app.py</code> 与 <code>tui/shell.py</code> 各自实现了一套：</p>
+<ul class="slist" style="margin-top:8px">
+<li>事件处理逻辑</li>
+<li>token 记录与统计</li>
+<li>task reminder 注入</li>
+<li>context compact 装配</li>
+</ul>
+<p style="margin-top:8px;color:var(--warning);font-weight:600">已经出现行为差异，需要统一。</p>
+</div>
+<div class="card">
+<h3>其他架构要点</h3>
+<ul class="slist">
+<li>TUI 监听 Agent 事件 → 映射为面板、状态文字和文件变更预览</li>
+<li>Compact 模型调用发生在 AgentLoop 外围回调 → 不进入普通 usage 统计</li>
+<li>AgentTeam 为每个子Agent创建独立 ContextManager</li>
+<li>所有 Agent 共享同一个真实 workspace（无文件锁/冲突检测）</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="pnum">6 / 24</div>
+</div></section>
+
+<!-- S7: 整体运行流程 (1/2) — Lead Agent -->
+<section class="slide content-slide" data-chapter="3"><div class="pbar" id="pb7"></div><div class="sbody">
+<div class="sec-label">EXECUTION FLOW</div><h2 class="stitle">一次任务，如何真正被完成</h2>
+<div class="defense-flow">
+<div class="defense-node"><b>01</b><h4>理解目标</h4><p>接收用户输入，融合历史、任务和工作区信息。</p></div>
+<div class="defense-node"><b>02</b><h4>形成决策</h4><p>模型判断是直接回答，还是调用工具继续推进。</p></div>
+<div class="defense-node"><b>03</b><h4>受控执行</h4><p>行动预告、权限确认、工具运行依次通过门禁。</p></div>
+<div class="defense-node"><b>04</b><h4>结果回注</h4><p>真实输出以 tool_result 返回模型，而非假设成功。</p></div>
+<div class="defense-node"><b>05</b><h4>循环收敛</h4><p>继续执行、修正或结束，并提交本轮上下文。</p></div>
+</div>
+<div class="cols3" style="margin-top:28px">
+<div class="hlb"><p><strong>有状态</strong><br>每轮都继承历史与任务状态</p></div>
+<div class="hlb"><p><strong>可审计</strong><br>操作前说明，操作后保留结果</p></div>
+<div class="hlb"><p><strong>可恢复</strong><br>失败会回注模型，允许调整策略</p></div>
+</div>
+<div class="pnum">7 / 24</div>
+</div></section>
+
+<!-- S8: 整体运行流程 (2/2) — 子Agent + 分支 -->
+<section class="slide content-slide" data-chapter="3"><div class="pbar" id="pb8"></div><div class="sbody">
+<div class="sec-label">EXECUTION FLOW</div><h2 class="stitle">整体运行流程 — 子Agent 与分支处理</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>子Agent 流程</h3>
+<div class="flow" style="flex-direction:column;align-items:flex-start;gap:4px">
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">1</span><span style="font-size:17px">lead 调用 team_spawn_agent</span></div>
+<div style="padding-left:28px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">2</span><span style="font-size:17px">AgentTeam 把 teammate 加入 _active</span></div>
+<div style="padding-left:28px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">3</span><span style="font-size:17px">启动 daemon 后台线程</span></div>
+<div style="padding-left:28px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">4</span><span style="font-size:17px">构造独立 client / tools / prompts / context</span></div>
+<div style="padding-left:28px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">5</span><span style="font-size:17px">teammate 执行自己的 AgentLoop</span></div>
+<div style="padding-left:28px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">6</span><span style="font-size:17px">结果写入 lead 的 MessageBus inbox</span></div>
+</div>
+</div>
+<div class="hlb"><p><strong>关键</strong>：子Agent 历史独立，结果截断到 2000 字符进入 lead 上下文，不会把子Agent 全部历史叠加到 lead context。</p></div>
+</div>
+<div>
+<div class="card">
+<h3>分支处理一览</h3>
+<table class="tbl" style="font-size:15px">
+<tr><th>场景</th><th>处理方式</th></tr>
+<tr><td>同一响应多个 tool_use</td><td>串行执行；仅 batch 内部并行</td></tr>
+<tr><td>权限请求</td><td>write/edit/run 需确认（允许/会话/拒绝）</td></tr>
+<tr><td>max_tokens 截断</td><td>最多自动续写 3 次，合并各段文本</td></tr>
+<tr><td>stop_reason 异常</td><td>以实际 content block 为准</td></tr>
+<tr><td>上下文压缩</td><td>TUI 和子Agent 模型请求前估算→超阈值先摘要</td></tr>
+<tr><td>模型停止无工具</td><td>交给 stop Hook；默认直接结束</td></tr>
+<tr><td>429/502/503/超时等</td><td>最多 3 次重试，指数退避或 Retry-After</td></tr>
+<tr><td>非交互 stdin/stdout</td><td>权限默认拒绝</td></tr>
+</table>
+</div>
+</div>
+</div>
+<div class="pnum">8 / 24</div>
+</div></section>
+
+<!-- S9: Agent Loop 设计 -->
+<section class="slide content-slide" data-chapter="4"><div class="pbar" id="pb9"></div><div class="sbody">
+<div class="sec-label">AGENT LOOP</div><h2 class="stitle">Agent Loop：系统的“心跳”</h2>
+<div class="loop-stage">
+<div class="loop-visual">
+  <div class="loop-ring r1"></div><div class="loop-ring r2"></div>
+  <div class="loop-ring r3">持续判断<br>持续行动</div>
+  <div class="loop-pill lp1">模型决策</div><div class="loop-pill lp2">工具执行</div>
+  <div class="loop-pill lp3">结果回注</div><div class="loop-pill lp4">状态更新</div>
+</div>
+<div style="display:grid;grid-template-rows:repeat(3,1fr);gap:18px">
+<div class="ncard"><div class="ncard-n">A</div><h4>循环何时继续</h4><p>模型仍需要工具、输出被截断，或外部协作消息带来新任务。</p></div>
+<div class="ncard"><div class="ncard-n">B</div><h4>循环何时结束</h4><p>模型给出完整回答，且没有新的工具调用或继续信号。</p></div>
+<div class="ncard"><div class="ncard-n">C</div><h4>设计价值</h4><p>核心循环不感知具体 UI 和业务工具，扩展能力通过 Hook、事件和注册表接入。</p></div>
+</div>
+</div>
+<div class="hlb hlb-w" style="margin-top:24px"><p><strong>当前边界</strong>：循环尚未设置全局步数、时间和成本上限，这是走向生产化前必须补齐的治理能力。</p></div>
+<div class="pnum">9 / 24</div>
+</div></section>
+
+<!-- S10: 工具系统 (1/3) — 能力总览 -->
+<section class="slide content-slide" data-chapter="5"><div class="pbar" id="pb10"></div><div class="sbody">
+<div class="sec-label">TOOL SYSTEM</div><h2 class="stitle">17 个工具，组成三类执行能力</h2>
+<div class="capability-grid">
+<div class="capability" data-no="01"><div class="big">5</div><h3>操作环境</h3><p>读取文件、写入文件、精确编辑、运行命令，并在行动前向用户说明意图。</p><div class="hlb"><p>让模型从“建议者”变成“执行者”。</p></div></div>
+<div class="capability" data-no="02"><div class="big">5</div><h3>管理任务</h3><p>创建计划、查看进度、更新状态，并在收尾阶段提供验证提示。</p><div class="hlb"><p>让长任务拥有可见的推进节奏。</p></div></div>
+<div class="capability" data-no="03"><div class="big">7</div><h3>组织协作</h3><p>创建 teammate、传递消息、等待结果，并支持计划申请与审批。</p><div class="hlb"><p>让复杂任务可以分工，而不是无限拉长单线程。</p></div></div>
+</div>
+<div class="hlb hlb-w" style="margin-top:26px"><p><strong>能力按角色收敛</strong>：Lead 拥有完整工作台；Teammate 只获得局部执行与通信能力；Reviewer 聚焦检查与验证。</p></div>
+<div class="pnum">10 / 24</div>
+</div></section>
+
+<!-- S11: 工具系统 (2/3) — 文件操作详解 -->
+<section class="slide content-slide" data-chapter="5"><div class="pbar" id="pb11"></div><div class="sbody">
+<div class="sec-label">TOOL SYSTEM</div><h2 class="stitle">工具系统 — 文件操作详解</h2>
+<div class="cols3">
+<div class="ncard"><div class="ncard-n">01</div>
+<h4>read_file</h4>
+<p>支持单文件 path 或 files[] batch。默认最多 60,000 字符，最大 200,000。batch 最多 8 线程并行，返回顺序保持输入顺序。支持字符 offset、上限和行范围。无需权限。</p>
+<div class="tag tag-g" style="margin-top:8px">不需要权限</div>
+</div>
+<div class="ncard"><div class="ncard-n">02</div>
+<h4>write_file</h4>
+<p>输入 path + 完整 content。默认不覆盖现有文件。空内容默认拒绝（allow_empty=true 才允许）。拒绝 ?、todo、unknown 等占位路径。单文件工具，不支持 batch。</p>
+<div class="tag tag-a" style="margin-top:8px">需要权限确认</div>
+</div>
+<div class="ncard"><div class="ncard-n">03</div>
+<h4>edit_file</h4>
+<p>单项 path/old_str/new_str 或 edits[]。old_str 必须非空且在当前文件中唯一。不同文件最多 8 组并行；同文件多编辑严格按数组顺序执行。不具备事务性。</p>
+<div class="tag tag-a" style="margin-top:8px">需要权限确认</div>
+</div>
+</div>
+<div style="margin-top:16px">
+<div class="card">
+<h3>安全边界</h3>
+<div class="cols2" style="gap:20px">
+<div><ul class="slist">
+<li>文件路径解析后必须位于 workspace（resolve_inside 校验）</li>
+<li>write 拒绝占位路径、空内容和默认覆盖</li>
+<li>write 拒绝 ? / todo / unknown / placeholder 等占位片段</li>
+</ul></div>
+<div><ul class="slist">
+<li>edit 要求 old_str 唯一匹配（防止意外修改）</li>
+<li>read/write/edit 全部经过 workspace 路径校验</li>
+<li>TUI 在权限决定前显示内容预览（最多 4000 字符/80 行）</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="pnum">11 / 24</div>
+</div></section>
+
+<!-- S12: 工具系统 (3/3) — 命令执行与四级安全 -->
+<section class="slide content-slide" data-chapter="5"><div class="pbar" id="pb12"></div><div class="sbody">
+<div class="sec-label">TOOL SYSTEM</div><h2 class="stitle">工具系统 — 命令执行与四级安全</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>run_command 参数</h3>
+<table class="tbl"><tr><th>参数</th><th>说明</th></tr>
+<tr><td>command/commands[]</td><td>单项或 batch（最多8条并行）</td></tr>
+<tr><td>shell=False</td><td>不使用 shell 执行</td></tr>
+<tr><td>cwd=workspace</td><td>工作目录设为 workspace</td></tr>
+<tr><td>timeout</td><td>默认 30s，范围 1–120s</td></tr>
+<tr><td>stdout/stderr</td><td>线程持续排空，原始字节 ≤128K</td></tr>
+<tr><td>最终显示</td><td>截断到 12,000 字符</td></tr>
+</table>
+</div>
+<div class="hlb hlb-w"><p><strong>重要边界</strong>：workspace 只决定 cwd，并不沙箱化子进程。未被正则命中的命令仍可访问 workspace 外路径、网络或系统资源。</p></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>四级安全防线</h3>
+<div class="slayers">
+<div class="slayer l1"><strong>L1 — 编码安全</strong><span>解码顺序：UTF-8 → 系统编码 → GBK → replacement decode</span></div>
+<div class="slayer l2"><strong>L2 — 权限确认</strong><span>lead 的 write_file / edit_file / run_command 需要交互确认</span></div>
+<div class="slayer l3"><strong>L3 — 硬拒绝列表</strong><span>Permission 和工具层双重正则拦截危险命令</span></div>
+<div class="slayer l4"><strong>L4 — 危险命令正则</strong><span>删除/移动/格式化/关机/taskkill/注册表删除等自动拒绝</span></div>
+</div>
+</div>
+<div class="hlb"><p><strong>解码降级策略</strong>：UTF-8 → 系统编码(GBK) → replacement decode，确保中文 Windows 命令输出不乱码。</p></div>
+</div>
+</div>
+<div class="pnum">12 / 24</div>
+</div></section>
+
+<!-- S13: Hook 机制 -->
+<section class="slide content-slide defense-dark" data-chapter="6"><div class="pbar" id="pb13"></div><div class="sbody">
+<div class="sec-label">HOOK SYSTEM</div><h2 class="stitle">把“规则”放在执行链上</h2>
+<div class="defense-flow" style="grid-template-columns:repeat(3,1fr);margin-top:30px">
+<div class="defense-node" style="min-height:300px"><b>01</b><h4>执行之前</h4><p>要求行动预告，并完成权限判断。危险操作可以在真正发生前被拒绝。</p><div class="hlb"><p>PRE · CONTROL</p></div></div>
+<div class="defense-node" style="min-height:300px"><b>02</b><h4>执行之后</h4><p>记录操作状态和结果，为下一次决策提供确定的事实基础。</p><div class="hlb"><p>POST · TRACE</p></div></div>
+<div class="defense-node" style="min-height:300px"><b>03</b><h4>准备结束</h4><p>处理输出截断、继续请求与最终停止决策，避免回答在错误位置中断。</p><div class="hlb"><p>STOP · DECIDE</p></div></div>
+</div>
+<div class="cols2" style="margin-top:32px">
+<div class="card"><h3>为什么采用 Hook</h3><p>核心循环只关心“模型—工具—结果”，权限、展示和停止策略可独立演进，降低功能耦合。</p></div>
+<div class="card" style="border-color:var(--warning)"><h3>当前不足</h3><p>上下文压缩、任务提醒和 Team Inbox 仍通过其他回调接入；子 Agent 权限也尚未统一到同一策略。</p></div>
+</div>
+<div class="pnum">13 / 24</div>
+</div></section>
+
+<!-- S14: Context Manager (1/3) — 架构与隔离 -->
+<section class="slide content-slide dense-page" data-chapter="7"><div class="pbar" id="pb14"></div><div class="sbody">
+<div class="sec-label">CONTEXT MANAGER</div><h2 class="stitle">Context Manager — 架构与上下文隔离</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>每个 ContextManager 保存</h3>
+<ul class="slist">
+<li><strong>_history</strong>：实际消息历史</li>
+<li><strong>_rolling_summary</strong>：最近一次 compact 摘要</li>
+<li><strong>MemoryStore</strong>：独立 notes/summaries 容器</li>
+<li><strong>last_usage</strong>：最近 API 调用 usage</li>
+<li>当前用户回合累计 input/output token</li>
+<li>streaming output 暂估</li>
+<li>当前完整请求估算 + 原始估算</li>
+<li>请求估算校准比例</li>
+</ul>
+</div>
+<div class="hlb"><p><strong>rolling summary ≠ MemoryStore</strong>：compact 摘要直接作为 <code>[Context Summary]</code> user 消息写入历史，不调用 <code>MemoryStore.add_summary()</code>。</p></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>上下文隔离架构</h3>
+<table class="tbl">
+<tr><th>Agent</th><th>ContextManager</th><th>提供者</th></tr>
+<tr><td>Lead</td><td>1 个独立 CM</td><td>直接创建</td></tr>
+<tr><td>Teammate A</td><td>独立 CM</td><td>AgentContextRegistry</td></tr>
+<tr><td>Teammate B</td><td>独立 CM</td><td>AgentContextRegistry</td></tr>
+<tr><td>Reviewer</td><td>独立 CM</td><td>AgentContextRegistry</td></tr>
+</table>
+</div>
+<div class="card">
+<h3>窗口与阈值</h3>
+<div class="krow" style="margin-bottom:0">
+<div class="kpi"><div class="kpi-n">1M</div><div class="kpi-l">假定窗口</div></div>
+<div class="kpi"><div class="kpi-n">85%</div><div class="kpi-l">默认比例</div></div>
+<div class="kpi"><div class="kpi-n">850K</div><div class="kpi-l">compact 阈值</div></div>
+</div>
+<p style="margin-top:8px;font-size:15px;color:var(--text-muted)">TUI 右下角百分比固定用 1,000,000 为分母</p>
+</div>
+</div>
+</div>
+<div class="pnum">14 / 24</div>
+</div></section>
+
+<!-- S15: Context Manager (2/3) — Token 估算与校准 -->
+<section class="slide content-slide" data-chapter="7"><div class="pbar" id="pb15"></div><div class="sbody">
+<div class="sec-label">CONTEXT MANAGER</div><h2 class="stitle">上下文不是越多越好，而是要始终可控</h2>
+<div class="capability-grid">
+<div class="capability" data-no="01"><div class="big">估</div><h3>调用前估算</h3><p>把 system prompt、历史消息、工具说明和 Schema 统一纳入请求规模估算。</p></div>
+<div class="capability" data-no="02"><div class="big">校</div><h3>调用后校准</h3><p>使用服务端返回的真实 usage 修正近似值，让后续判断逐步贴近实际消耗。</p></div>
+<div class="capability" data-no="03"><div class="big">压</div><h3>达到阈值压缩</h3><p>生成高密度摘要，保留最近对话与工具结果，避免长会话无限膨胀。</p></div>
+</div>
+<div class="cols2" style="margin-top:28px">
+<div class="card"><h3>Token 估算公式</h3>
+<div style="font-size:20px;color:var(--text-body);line-height:2.2;padding:8px 0">
+<div>$$\hat{t} = \frac{\text{bytes}_{\text{UTF-8}}}{4}$$</div>
+<div>$$r_t = (1-\alpha) \cdot r_{t-1} + \alpha \cdot \frac{\text{real}}{\text{estimated}}$$</div>
+</div>
+<div style="font-size:15px;color:var(--text-muted);line-height:1.7;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px">
+<div><code>t̂</code> = 预估 token 数&emsp;<code>bytes</code> = 消息体 UTF-8 字节数&emsp;除数 <code>4</code> = 经验常数（1 token ≈ 4 字节）</div>
+<div><code>r_t</code> = 第 t 轮的校准比率&emsp;<code>α</code> = 平滑系数（默认 0.3）&emsp;<code>real</code> / <code>estimated</code> = 服务端返回的真实比值</div>
+</div>
+</div>
+<div class="card" style="border-color:var(--warning)"><h3>EMA 比率校准</h3>
+<div style="font-size:16px;color:var(--text-body);line-height:1.75">
+<p style="margin:0 0 8px">每次 API 调用后，用<strong>实际消耗 / 本地估算</strong>得到本轮观测比，再与历史比率做<strong>指数移动平均</strong>：</p>
+<div style="background:rgba(0,0,0,.2);border-radius:6px;padding:10px 14px;font-size:15px;line-height:1.7">
+<div>第 1 轮&ensp;<code>r₁ = 1.0</code>（初始假设估算准确）</div>
+<div>第 2 轮&ensp;实际 1200 / 估算 1000 = 1.2 → <code>r₂ = 0.7×1.0 + 0.3×1.2 = 1.06</code></div>
+<div>第 3 轮&ensp;实际 900 / 估算 1000 = 0.9 → <code>r₃ = 0.7×1.06 + 0.3×0.9 ≈ 1.01</code></div>
+</div>
+<p style="margin:8px 0 0">α 越大响应越快但越抖，α 越小越平滑但滞后。后续所有预估都乘以当前 <code>r_t</code>，使本地估算逐步收敛到真实值。</p>
+</div>
+</div>
+</div>
+<div class="pnum">15 / 24</div>
+</div></section>
+
+<!-- S16: Context Manager (3/3) — Compact 算法 -->
+<section class="slide content-slide dense-page" data-chapter="7"><div class="pbar" id="pb16"></div><div class="sbody">
+<div class="sec-label">CONTEXT MANAGER</div><h2 class="stitle">Context Manager — Compact 压缩算法</h2>
+<div class="cols2">
+<div>
+<div class="flow" style="flex-direction:column;align-items:flex-start;gap:8px">
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">1</span><span style="font-size:18px">把全部历史序列化为 <code>role: content</code> 文本</span></div>
+<div style="padding-left:40px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">2</span><span style="font-size:18px">使用 <code>compact.md</code> 生成新的 system prompt</span></div>
+<div style="padding-left:40px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">3</span><span style="font-size:18px">发起<strong>独立</strong>模型请求生成摘要</span></div>
+<div style="padding-left:40px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">4</span><span style="font-size:18px">保留最近 <strong>6 条</strong>原消息</span></div>
+<div style="padding-left:40px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">5</span><span style="font-size:18px">丢弃保留区开头没有对应 tool_use 的孤立 tool_result</span></div>
+<div style="padding-left:40px;font-size:22px;color:var(--accent)">↓</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="tag tag-a" style="font-size:18px;padding:8px 16px">6</span><span style="font-size:18px">写成 <code>[Context Summary] + safe tail</code></span></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>触发条件</h3>
+<p>当前 context tokens 或消息估算达到阈值（默认 850,000）时触发压缩。</p>
+</div>
+<div class="card" style="border-color:var(--warning);margin-bottom:16px">
+<h3>已知精度边界</h3>
+<ul class="slist">
+<li>本地无 DeepSeek tokenizer，核心估算为 UTF-8 字节/4</li>
+<li>streaming 只统计 text delta，不覆盖 thinking/tool_use</li>
+<li>compact 自身模型 usage 不进入回合 token tracker</li>
+<li>app.py 非 TUI 路径没有调用 prepare_request()</li>
+<li>compact_if_needed() 是始终返回 False 的占位方法</li>
+</ul>
+</div>
+<div class="hlb"><p><strong>关键设计</strong>：compact 发生在 AgentLoop 外围回调中，不进入普通 usage 事件统计。压缩后的历史 = 摘要 + 最近 6 条消息的"安全尾部"，确保模型不丢失最近的对话上下文。</p></div>
+</div>
+</div>
+<div class="pnum">16 / 24</div>
+</div></section>
+
+<!-- S17: 多Agent协作 (1/2) — 角色与 reviewed 流程 -->
+<section class="slide content-slide defense-dark" data-chapter="8"><div class="pbar" id="pb17"></div><div class="sbody">
+<div class="sec-label">MULTI-AGENT</div><h2 class="stitle">多Agent协作架构 — 角色与协作流程</h2>
+<div class="cols3" style="margin-bottom:20px">
+<div class="ncard"><div class="ncard-n">L</div>
+<h4>Lead</h4><p>整体目标、17 个工具、任务面板、权限确认、整合与最终回复。可创建 Teammate。</p>
+<div style="margin-top:8px"><span class="tag tag-a">17 tools</span><span class="tag tag-g">权限控制</span></div>
+</div>
+<div class="ncard"><div class="ncard-n">T</div>
+<h4>Teammate</h4><p>局部任务，最多 8 个工具，不能继续 spawn。独立 daemon 线程，不同 teammate 可并行。</p>
+<div style="margin-top:8px"><span class="tag tag-w">8 tools</span><span class="tag tag-a">无权限</span></div>
+</div>
+<div class="ncard"><div class="ncard-n">R</div>
+<h4>Reviewer</h4><p>需求预审和结果审查，5 个基础工具。第一行输出 DECISION: pass/revise/needs_lead。</p>
+<div style="margin-top:8px"><span class="tag tag-m">5 tools</span><span class="tag tag-g">审查</span></div>
+</div>
+</div>
+<div class="card">
+<h3>Reviewed Agent 流程（同一后台线程串行）</h3>
+<div class="flow">
+<div class="fstep hl">Reviewer 预审需求</div><div class="farr">→</div>
+<div class="fstep">Worker 执行</div><div class="farr">→</div>
+<div class="fstep hl">Reviewer 审查结果</div><div class="farr">→</div>
+<div class="fstep">(必要时) Worker 返工</div><div class="farr">→</div>
+<div class="fstep hl">Reviewer 再审查</div><div class="farr">→</div>
+<div class="fstep">组合结果发给 lead</div>
+</div>
+<p style="margin-top:12px;font-size:16px;color:var(--text-muted);text-align:center">最大返工轮数 0–2 轮，同一后台线程内串行模型调用</p>
+</div>
+<div class="pnum">17 / 24</div>
+</div></section>
+
+<!-- S18: 多Agent协作 (2/2) — MessageBus 与局限 -->
+<section class="slide content-slide" data-chapter="8"><div class="pbar" id="pb18"></div><div class="sbody">
+<div class="sec-label">MULTI-AGENT</div><h2 class="stitle">多Agent协作 — MessageBus 与当前局限</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>MessageBus 设计</h3>
+<ul class="slist">
+<li>使用锁保护 mailbox，线程安全</li>
+<li>消息含：发送者、接收者、类型、request_id、metadata、状态、时间</li>
+<li>读取后状态从 unread → delivered</li>
+<li>子Agent 结果截断到 2000 字符进入 lead 上下文</li>
+<li>Lead 可自动注入 inbox、team_check_inbox 或 team_wait_for_inbox</li>
+</ul>
+</div>
+<div class="card">
+<h3>计划审批协议</h3>
+<div class="code">waiting_plan → waiting_review → approved / rejected</div>
+<p style="margin-top:8px;font-size:16px;color:var(--warning)">不是硬性执行门禁——没有 pre-tool Hook 检查 plan 状态。是否等待批准主要依赖 sub_agent.md 提示词。</p>
+</div>
+</div>
+<div>
+<h3 style="font-size:20px;margin-bottom:14px">当前局限（7项）</h3>
+<div class="card" style="padding:20px 24px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">1</span>所有 Agent 共享同一 workspace，无文件锁/路径所有权/冲突检测</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">2</span>子Agent 没有 PermissionManager——写入、编辑和命令不询问用户</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">3</span>后台线程为 daemon，主进程退出会直接终止未完成工作</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">4</span>没有 cancel / shutdown / join 生命周期协议</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">5</span>_active 只记录名称和角色，不能表达 idle / failed / cancelled</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">6</span>异常会作为 error 消息发给 lead，但没有自动重试</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:17px;color:var(--text-body);line-height:1.55"><span style="flex-shrink:0;background:var(--accent);color:#2B1A15;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">7</span>inbox 消息最多 2000 字符进入上下文，长结果可能丢失证据</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pnum">18 / 24</div>
+</div></section>
+
+<!-- S19: Task System & Prompt 管理 (1/2) -->
+<section class="slide content-slide dense-page" data-chapter="9"><div class="pbar" id="pb19"></div><div class="sbody">
+<div class="sec-label">TASK & PROMPT</div><h2 class="stitle">Task System — 内存任务面板</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>任务状态模型</h3>
+<div class="flow">
+<div class="fstep">pending</div><div class="farr">→</div>
+<div class="fstep hl">in_progress</div><div class="farr">→</div>
+<div class="fstep" style="border-color:var(--success)">completed</div>
+</div>
+<p style="margin-top:8px;font-size:16px;color:var(--text-muted)">done 是 completed 的输入别名</p>
+</div>
+<div class="card" style="margin-bottom:16px">
+<h3>4 个工具</h3>
+<table class="tbl">
+<tr><th>工具</th><th>功能</th></tr>
+<tr><td>task_create</td><td>批量创建（提示约束 3–6 个里程碑，但 Schema 无上限）</td></tr>
+<tr><td>task_list</td><td>返回简化面板</td></tr>
+<tr><td>task_get</td><td>返回说明、依赖、active form、notes 等详情</td></tr>
+<tr><td>task_update</td><td>更新字段和状态（不会强制检查 blocked_by）</td></tr>
+</table>
+</div>
+<div class="hlb hlb-w"><p>没有当前生效的 task_claim、task_complete 或外部 l1m task 命令。</p></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>依赖与调度</h3>
+<ul class="slist">
+<li>blocked_by 会保存，can_start() 和 blockers_for() 可计算阻塞</li>
+<li>但工具执行和 task_update 不会调用 can_start()</li>
+<li>依赖不驱动调度，也不禁止提前完成</li>
+</ul>
+</div>
+<div class="card">
+<h3>运行时行为</h3>
+<ul class="slist">
+<li>有开放任务时，每 4 次模型调用追加一条 [Task Reminder]（仅上下文提醒，不自动更新状态）</li>
+<li>每轮完成后，若所有任务都 completed → clear_if_complete() 清空整个面板</li>
+<li>面板完成后被清空，最终验收不能机械依赖任务状态</li>
+<li>模型可以错误标记 completed / 任务可能漏拆 / 依赖不强制</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="pnum">19 / 24</div>
+</div></section>
+
+<!-- S20: Task System & Prompt 管理 (2/2) -->
+<section class="slide content-slide dense-page" data-chapter="10"><div class="pbar" id="pb20"></div><div class="sbody">
+<div class="sec-label">TASK & PROMPT</div><h2 class="stitle">Prompt 管理 — 动态拼接与缓存</h2>
+<div class="cols2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>动态拼接顺序</h3>
+<div class="flow" style="flex-direction:column;align-items:flex-start;gap:7px">
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">1</span><span style="font-size:16px"><strong>identity</strong> · 身份与角色定义，始终加载</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">2</span><span style="font-size:16px"><strong>basic_rules</strong> · 核心行为准则：迭代性、JSON Schema、文件拆分</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">3</span><span style="font-size:16px"><strong>tools</strong> · 工具表 + 使用约束（仅在 tools 非空时加载）</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">4</span><span style="font-size:16px"><strong>task_system</strong> · 任务面板规则：3–6 里程碑、仪表盘语义（仅在 task 工具启用时）</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">5</span><span style="font-size:16px"><strong>agent_teams</strong> · 多Agent 协作规则：并行收益、角色协议（仅在 team 工具启用时）</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">6</span><span style="font-size:16px"><strong>agent_loop</strong> · 循环骨架：推理→动作→反馈→推理（仅在 tools 非空时）</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">7</span><span style="font-size:16px"><strong>workspace</strong> · 当前工作目录路径，始终注入</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">8</span><span style="font-size:16px"><strong>memory</strong> · 持久化记忆内容（仅非空时加载）</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="tag tag-a">9</span><span style="font-size:16px"><strong>tasks</strong> · 当前任务面板渲染文本（仅非空时加载）</span></div>
+</div>
+<p style="margin-top:10px;font-size:15px;color:var(--text-muted)">拼接决策由 <code>render_system()</code> 中的 <code>last_loaded_sections</code> 记录，按需跳过空状态的动态段落，减少无效 token 消耗。</p>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<h3>提示词文件</h3>
+<table class="tbl">
+<tr><th>文件</th><th>用途</th></tr>
+<tr><td>compact.md</td><td>生成高密度上下文摘要</td></tr>
+<tr><td>sub_agent.md</td><td>teammate 角色、批量工具、计划协议</td></tr>
+<tr><td>sub_agent_reviewer.md</td><td>第一行输出 DECISION: pass/revise/needs_lead</td></tr>
+<tr><td>system.md</td><td>section 文件不存在时的兼容回退</td></tr>
+</table>
+</div>
+<div class="card">
+<h3>约束分层</h3>
+<div class="slayers">
+<div class="slayer l1"><strong>程序级强约束</strong><span>workspace 路径、占位写入限制、唯一替换、危险命令拦截、权限 Hook、announce Hook</span></div>
+<div class="slayer l3"><strong>仅依赖提示词</strong><span>3–6 任务拆分、final_check 调用、teammate 审批、JSON Schema 遵循、"操作前确认、操作后验证"</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pnum">20 / 24</div>
+</div></section>
+
+<!-- S21: 测试与验证 -->
+<section class="slide content-slide" data-chapter="11"><div class="pbar" id="pb21"></div><div class="sbody">
+<div class="sec-label">TESTING & VERIFICATION</div><div class="stitle">测试不是数字，而是可信度证据</div>
+<div class="krow" style="margin-bottom:30px">
+<div class="kpi"><div class="kpi-n">155</div><div class="kpi-l">测试用例</div><div class="kpi-s">全部通过</div></div>
+<div class="kpi"><div class="kpi-n">15</div><div class="kpi-l">测试文件</div><div class="kpi-s">覆盖核心模块</div></div>
+<div class="kpi"><div class="kpi-n">2.36s</div><div class="kpi-l">执行耗时</div><div class="kpi-s">本地完整测试</div></div>
+<div class="kpi"><div class="kpi-n">0</div><div class="kpi-l">失败 / 错误</div><div class="kpi-s">项目文件零变化</div></div>
+</div>
+<div class="capability-grid">
+<div class="capability" data-no="A"><h3>执行闭环</h3><p>验证模型调用、工具回注、停止条件、max-token 续写和外部消息注入。</p><div class="hlb"><p>证明 Agent Loop 能正确推进和停止。</p></div></div>
+<div class="capability" data-no="B"><h3>安全边界</h3><p>验证 workspace 逃逸、危险命令、权限拒绝、唯一替换和命令超时。</p><div class="hlb"><p>证明关键防线不是只写在 Prompt 里。</p></div></div>
+<div class="capability" data-no="C"><h3>交互与协作</h3><p>验证 TUI 渲染、Token 显示、Team Inbox、上下文隔离和计划协议。</p><div class="hlb"><p>证明多 Agent 与终端体验可重复运行。</p></div></div>
+</div>
+<div class="hlb hlb-w" style="margin-top:26px"><p><strong>尚未覆盖</strong>：真实模型网关、真实 Windows Terminal 端到端交互，以及多 Agent 同时写同一文件的冲突场景。</p></div>
+<div class="pnum">21 / 24</div>
+</div></section>
+
+<!-- S22: 技术亮点总结 -->
+<section class="slide content-slide" data-chapter="11"><div class="pbar" id="pb22"></div><div class="sbody">
+<div class="sec-label">TECHNICAL HIGHLIGHTS</div>
+<div class="stitle">项目技术亮点总结</div>
+<div class="cols2" style="gap:24px">
+<div class="ncard"><div class="ncard-n">1</div><div><h3 style="font-size:19px;margin:0 0 6px">完整 Agent Loop</h3><p style="font-size:15px;color:var(--text-muted);margin:0">以 Anthropic content block 为核心的多轮模型—工具循环，消息格式完整还原 API 语义</p></div></div>
+<div class="ncard"><div class="ncard-n">2</div><div><h3 style="font-size:19px;margin:0 0 6px">安全的工具系统</h3><p style="font-size:15px;color:var(--text-muted);margin:0">workspace 路径约束、权限控制、危险命令拦截四层防护，支持批量并行</p></div></div>
+<div class="ncard"><div class="ncard-n">3</div><div><h3 style="font-size:19px;margin:0 0 6px">百万级上下文管理</h3><p style="font-size:15px;color:var(--text-muted);margin:0">完整请求估算 + 服务端 usage 校准 + 平滑 EMA 自适应 + 自动 compact 压缩</p></div></div>
+<div class="ncard"><div class="ncard-n">4</div><div><h3 style="font-size:19px;margin:0 0 6px">多 Agent 协作</h3><p style="font-size:15px;color:var(--text-muted);margin:0">Lead/Teammate/Reviewer 三角色，独立上下文，线程安全 MessageBus 通信</p></div></div>
+<div class="ncard"><div class="ncard-n">5</div><div><h3 style="font-size:19px;margin:0 0 6px">Reviewed Agent 工作流</h3><p style="font-size:15px;color:var(--text-muted);margin:0">需求预审 → 执行 → 审查 → 返工的闭环，最多 2 轮自动修正</p></div></div>
+<div class="ncard"><div class="ncard-n">6</div><div><h3 style="font-size:19px;margin:0 0 6px">可扩展架构</h3><p style="font-size:15px;color:var(--text-muted);margin:0">Hook/事件/回调三层扩展点，核心循环与 UI/权限/Task/Team 解耦</p></div></div>
+<div class="ncard"><div class="ncard-n">7</div><div><h3 style="font-size:19px;margin:0 0 6px">155 个测试覆盖</h3><p style="font-size:15px;color:var(--text-muted);margin:0">覆盖主循环、工具、上下文、权限、多 Agent 与终端渲染，全部通过</p></div></div>
+</div>
+</div>
+<div class="pnum">22 / 24</div>
+</div></section>
+
+<!-- S23: 当前限制与改进建议 -->
+<section class="slide content-slide defense-dark" data-chapter="11"><div class="pbar" id="pb23"></div><div class="sbody">
+<div class="sec-label">ROADMAP</div><div class="stitle">从学习原型，走向可信 Agent Runtime</div>
+<div class="roadmap">
+<div class="road-phase"><div class="phase">PHASE 01 · TRUST</div><h3>先补齐安全边界</h3><ul><li>子 Agent 继承权限策略</li><li>计划审批成为程序门禁</li><li>命令执行引入更强隔离</li></ul></div>
+<div class="road-phase"><div class="phase">PHASE 02 · CONTROL</div><h3>再建立运行治理</h3><ul><li>最大步数、时间与成本预算</li><li>Agent 取消和生命周期管理</li><li>共享 workspace 冲突检测</li></ul></div>
+<div class="road-phase"><div class="phase">PHASE 03 · UNIFY</div><h3>统一架构</h3><ul><li>合并 Console 与 TUI 装配路径</li><li>统一 Hook 与事件扩展模型</li><li>提升 Context 和 Token 精度</li></ul></div>
+<div class="road-phase"><div class="phase">PHASE 04 · EXTEND</div><h3>协议与工程化</h3><ul><li>支持 <strong>Skill</strong> 技能协议接入</li><li>支持 <strong>MCP</strong> 模型上下文协议</li><li>结构化日志、可观测性与 CI 集成</li></ul></div>
+</div>
+<div style="margin-top:30px;border-left:6px solid var(--accent);padding:12px 0 12px 28px;font-family:Georgia,'Noto Serif SC',serif;font-size:30px;line-height:1.45;color:#F5EBDD">项目已经证明 Agent 可以"跑起来"；下一阶段要证明它能够长期、稳定、可信地运行。</div>
+<div class="pnum">23 / 24</div>
+</div></section>
+
+<!-- S24: 致谢 -->
+<section class="slide cover-slide" style="background:var(--bg-darker);justify-content:center;align-items:center;text-align:center">
+<div class="cv-d1"></div><div class="cv-d2"></div><div class="cv-d3"></div>
+<div style="position:relative;z-index:2">
+<div class="cv-badge">QUESTIONS & DISCUSSION</div>
+<div style="font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:92px;font-weight:700;color:#F4EDE4;margin-bottom:16px">感谢聆听</div>
+<div style="font-size:30px;color:rgba(244,237,228,.6);margin-bottom:40px">L1m CLI · 让模型从回答问题，走向完成任务</div>
+<div style="font-size:18px;color:rgba(244,237,228,.35);letter-spacing:.06em">
+<span>Q & A</span>
+<span style="margin:0 24px">·</span>
+<span>2026-07-14</span>
+</div>
+</div>
+</section>
+
+</div><!-- .stage -->
+
+<script>
+// ── Slide Engine ──
+(function(){
+const SLIDE_COUNT = 24;
+const CHAPTERS = [
+  '概览','模块','流程','Agent Loop','工具系统','Hook',
+  'Context','多Agent','Task','Prompt','亮点'
+];
+
+let current = parseInt(localStorage.getItem('l1m-slide') || '0');
+let initialized = false;
+const stage = document.querySelector('.stage');
+const slides = document.querySelectorAll('.slide');
+
+// Scale
+function scaleStage(){
+  const sw = window.innerWidth / 1920;
+  const sh = window.innerHeight / 1080;
+  stage.style.transform = 'scale(' + Math.min(sw, sh).toFixed(4) + ')';
+}
+window.addEventListener('resize', scaleStage);
+scaleStage();
+
+// Progress bar builder
+function buildProgressBar(slideEl, idx){
+  const pbar = slideEl.querySelector('.pbar');
+  if(!pbar) return;
+  const ch = parseInt(slideEl.getAttribute('data-chapter') || '0');
+  if(!ch) return;
+  pbar.innerHTML = CHAPTERS.map(function(label, i){
+    var cls = (i+1 < ch) ? 'done' : (i+1 === ch) ? 'active' : 'future';
+    return '<div class="seg '+cls+'" data-ch="'+(i+1)+'">'+label+'</div>';
+  }).join('');
+}
+
+// Init all progress bars
+slides.forEach(function(s, i){ buildProgressBar(s, i); });
+
+// Determine effective background color for a slide
+function getSlideBg(slide){
+  if(slide.classList.contains('cover-slide') || slide.classList.contains('thanks-slide')) return '#2B1A15';
+  if(slide.classList.contains('defense-dark')) return '#2B1A15';
+  return '#F4EDE4';
+}
+
+// Show slide with circular background transition
+var trOverlay = document.querySelector('.tr-overlay');
+var transitioning = false;
+
+function showSlide(n){
+  n = Math.max(0, Math.min(n, SLIDE_COUNT - 1));
+  if(n === current && initialized) return;
+  if(transitioning) return;
+
+  var prev = current;
+  var oldSlide = slides[prev];
+  var newSlide = slides[n];
+  current = n;
+  initialized = true;
+
+  var oldBg = getSlideBg(oldSlide);
+  var newBg = getSlideBg(newSlide);
+
+  // Only animate if backgrounds differ
+  if(oldBg !== newBg){
+    transitioning = true;
+    trOverlay.style.background = newBg;
+    // Phase 1: circle expands from top-center over 0.55s
+    trOverlay.classList.add('go');
+    setTimeout(function(){
+      // Phase 2: swap slides under overlay
+      slides.forEach(function(s, i){ s.classList.toggle('active', i === current); });
+      localStorage.setItem('l1m-slide', current);
+      // Phase 3: instantly hide overlay (no shrink-back)
+      trOverlay.style.transition = 'none';
+      trOverlay.classList.remove('go');
+      void trOverlay.offsetWidth;
+      trOverlay.style.transition = '';
+      animateKPIs();
+      transitioning = false;
+    }, 550);
+  } else {
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === current); });
+    localStorage.setItem('l1m-slide', current);
+    animateKPIs();
+  }
+}
+
+// KPI counting animation
+function animateKPIs(){
+  var activeSlide = slides[current];
+  if(!activeSlide) return;
+  var kpiNumbers = activeSlide.querySelectorAll('.kpi-n');
+  kpiNumbers.forEach(function(el){
+    var text = el.textContent || '';
+    var numMatch = text.match(/[\d.]+/);
+    if(!numMatch) return;
+    var target = parseFloat(numMatch[0]);
+    var suffix = text.replace(numMatch[0], '');
+    var isFloat = numMatch[0].indexOf('.') !== -1;
+    var duration = 800;
+    var start = performance.now();
+    function tick(now){
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      // ease-out
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = isFloat ? (target * eased).toFixed(2) : Math.floor(target * eased);
+      el.textContent = current + suffix;
+      if(progress < 1) requestAnimationFrame(tick);
+      else el.textContent = text;
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// Navigation
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' '){
+    e.preventDefault();
+    showSlide(current + 1);
+  }
+  if(e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    showSlide(current - 1);
+  }
+  if(e.key === 'Home'){ e.preventDefault(); showSlide(0); }
+  if(e.key === 'End'){ e.preventDefault(); showSlide(SLIDE_COUNT - 1); }
+});
+
+// Mouse wheel (throttled)
+var wheelThrottle = false;
+document.addEventListener('wheel', function(e){
+  if(wheelThrottle) return;
+  wheelThrottle = true;
+  setTimeout(function(){ wheelThrottle = false; }, 800);
+  if(e.deltaY > 0) showSlide(current + 1);
+  else if(e.deltaY < 0) showSlide(current - 1);
+}, {passive: true});
+
+// Touch swipe
+var touchStartY = 0;
+document.addEventListener('touchstart', function(e){ touchStartY = e.touches[0].clientY; }, {passive: true});
+document.addEventListener('touchend', function(e){
+  var dy = touchStartY - e.changedTouches[0].clientY;
+  if(Math.abs(dy) > 50){
+    if(dy > 0) showSlide(current + 1);
+    else showSlide(current - 1);
+  }
+});
+
+// Click progress bar segments to jump
+document.addEventListener('click', function(e){
+  var seg = e.target.closest('.pbar .seg');
+  if(!seg) return;
+  var ch = parseInt(seg.getAttribute('data-ch'));
+  if(!ch) return;
+  // Find first slide with this chapter
+  for(var i = 0; i < slides.length; i++){
+    if(parseInt(slides[i].getAttribute('data-chapter') || '0') === ch){
+      showSlide(i);
+      break;
+    }
+  }
+});
+
+// Start
+showSlide(current);
+
+// KaTeX render
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: '$$', right: '$$', display: true},
+  ]
+});
+})();
+</script>
+
+</body>
+</html>
