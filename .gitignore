@@ -1,0 +1,60 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Private project artifacts
+PPT/
+tests/
+docs/
+
+# Local agent and editor state
+.agents/
+.codex/
+.idea/
+.vscode/
+*.iml
+
+# Python environments and bytecode
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test, lint, type-check and coverage caches
+.pytest_cache/
+.tmp_pytest/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Build and package outputs
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+tmp/
+temp/
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
