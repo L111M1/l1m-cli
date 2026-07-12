@@ -75,6 +75,40 @@ def run_tui_shell(show_steps: bool = False) -> None:
             renderer.intro(settings, workspace)
             renderer.status("context cleared")
             continue
+        if user_text == "/compact":
+            context.replace_history(_inject_team_inbox(context.history, team, renderer))
+            if not context.history:
+                renderer.status("当前没有可压缩的上下文。")
+                continue
+            renderer.transient_status("正在压缩上下文...")
+            try:
+                tools = build_workspace_tools(workspace, tasks, team=team)
+                system_prompt = lambda: prompts.render_system(
+                    workspace=str(settings.workspace_path),
+                    memory=memory.render_for_prompt(),
+                    tasks=tasks.render_for_prompt(),
+                    enabled_tools=tools.names(),
+                )
+                before_tokens, after_tokens = _compact_context_now(
+                    context,
+                    AnthropicModelClient(settings),
+                    prompts,
+                    system_prompt,
+                    tools.specs,
+                )
+            except L1mError as exc:
+                renderer.clear_transient_status()
+                renderer.error(str(exc))
+                continue
+            except Exception as exc:
+                renderer.clear_transient_status()
+                renderer.error(f"上下文压缩失败: {exc}")
+                continue
+            renderer.clear_transient_status()
+            context_visible = True
+            renderer.context_status(after_tokens)
+            renderer.status(f"上下文已压缩: {before_tokens:,} -> {after_tokens:,} tokens")
+            continue
 
         loop = _build_tui_agent_loop(
             settings=settings,
@@ -401,6 +435,29 @@ def _make_context_compactor(
         )
 
     return compact
+
+
+def _compact_context_now(
+    context: ContextManager,
+    client: AnthropicModelClient,
+    prompts: PromptManager,
+    system_prompt_provider,
+    tool_specs_provider,
+) -> tuple[int, int]:
+    messages = context.history
+    before_tokens = context.prepare_request(
+        system_prompt_provider(),
+        messages,
+        tool_specs_provider(),
+    )
+    if not context.compact(client, prompts):
+        return before_tokens, before_tokens
+    after_tokens = context.prepare_request(
+        system_prompt_provider(),
+        context.history,
+        tool_specs_provider(),
+    )
+    return before_tokens, after_tokens
 
 
 def _as_int(value: object) -> int:

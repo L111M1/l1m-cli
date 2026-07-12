@@ -79,7 +79,10 @@ class TuiRenderer:
     def intro(self, settings: Settings, workspace: Workspace) -> None:
         self.clear()
         self.system_panel(settings, workspace)
-        self.line("输入任务开始，/exit 退出，/clear 清空上下文，/help 查看命令。", color=self.palette.dim)
+        self.line(
+            "输入任务开始，/exit 退出，/clear 清空上下文，/compact 压缩上下文，/help 查看命令。",
+            color=self.palette.dim,
+        )
 
     def system_panel(self, settings: Settings, workspace: Workspace) -> None:
         left_lines = [
@@ -110,6 +113,10 @@ class TuiRenderer:
                 ("/exit", self.palette.text),
                 (" 退出", self.palette.muted),
             ],
+            [
+                ("/compact", self.palette.text),
+                (" 压缩上下文", self.palette.muted),
+            ],
         ]
         self.split_panel(left_lines, right_lines, color=self.palette.system)
 
@@ -119,6 +126,7 @@ class TuiRenderer:
             [
                 "/exit        退出 L1m",
                 "/clear       清空本轮上下文、任务和记忆",
+                "/compact     立即压缩当前 Agent 上下文",
                 "/help        显示这段帮助",
                 "普通文本     作为 Agent 任务发送",
             ],
