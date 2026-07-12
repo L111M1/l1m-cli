@@ -8,7 +8,7 @@ from typing import Any
 from l1m_cli import __version__
 from l1m_cli.anthropic_client import AnthropicModelClient
 from l1m_cli.config import Settings, load_settings
-from l1m_cli.console import error, info
+from l1m_cli.console import error, info, warn
 from l1m_cli.core.agent_loop import AgentLoop
 from l1m_cli.core.agent_team import AgentTeam
 from l1m_cli.core.context_manager import ContextManager, TurnTokenTracker
