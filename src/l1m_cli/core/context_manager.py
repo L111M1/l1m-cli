@@ -4,7 +4,7 @@ import json
 import math
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 from l1m_cli.core.compact import compact_messages
 from l1m_cli.core.memory import MemoryStore
@@ -108,8 +108,19 @@ class ContextManager:
     def render_context_summary(self) -> str:
         return self._rolling_summary
 
-    def compact_if_needed(self) -> bool:
-        return False
+    def compact_if_needed(
+        self,
+        client: Any,
+        prompts: Any,
+        messages: list[dict[str, Any]] | None = None,
+        keep_last: int = 6,
+        on_usage: Callable[[dict[str, int]], None] | None = None,
+    ) -> bool:
+        candidate_messages = list(messages) if messages is not None else self.history
+        if not self.needs_compact(candidate_messages):
+            return False
+        self.replace_history(candidate_messages)
+        return self.compact(client, prompts, keep_last=keep_last, on_usage=on_usage)
 
     def needs_compact(self, messages: list[dict[str, Any]] | None = None) -> bool:
         if self.current_context_tokens >= self.compact_threshold:
@@ -130,10 +141,22 @@ class ContextManager:
         self._pending_context_estimate_tokens = estimated_tokens
         return estimated_tokens
 
-    def compact(self, client: Any, prompts: Any, keep_last: int = 6) -> bool:
+    def compact(
+        self,
+        client: Any,
+        prompts: Any,
+        keep_last: int = 6,
+        on_usage: Callable[[dict[str, int]], None] | None = None,
+    ) -> bool:
         if not self._history:
             return False
-        summary, kept = compact_messages(client, prompts, self._history, keep_last=keep_last)
+        summary, kept = compact_messages(
+            client,
+            prompts,
+            self._history,
+            keep_last=keep_last,
+            on_usage=on_usage,
+        )
         self._rolling_summary = summary.strip()
         safe_kept = _drop_leading_orphan_tool_results(kept)
         summary_message = {
@@ -163,12 +186,7 @@ class ContextManager:
         return self.turn_input_tokens + self.turn_output_tokens
 
     def record_usage(self, payload: dict[str, Any]) -> None:
-        usage = ModelUsage(
-            input_tokens=_as_int(payload.get("input_tokens")),
-            output_tokens=_as_int(payload.get("output_tokens")),
-            cache_creation_input_tokens=_as_int(payload.get("cache_creation_input_tokens")),
-            cache_read_input_tokens=_as_int(payload.get("cache_read_input_tokens")),
-        )
+        usage = _model_usage(payload)
         self.last_usage = usage
         if self._pending_request_base_tokens > 0 and usage.context_input_tokens > 0:
             measured_scale = usage.context_input_tokens / self._pending_request_base_tokens
@@ -183,6 +201,11 @@ class ContextManager:
         self.turn_input_tokens += usage.context_input_tokens
         self.turn_output_tokens += usage.output_tokens
         self._pending_output_estimate_tokens = 0
+
+    def record_auxiliary_usage(self, payload: dict[str, Any]) -> None:
+        usage = _model_usage(payload)
+        self.turn_input_tokens += usage.context_input_tokens
+        self.turn_output_tokens += usage.output_tokens
 
     def begin_model_call(self) -> None:
         self._pending_output_estimate_tokens = 0
@@ -279,6 +302,15 @@ def _as_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _model_usage(payload: dict[str, Any]) -> ModelUsage:
+    return ModelUsage(
+        input_tokens=_as_int(payload.get("input_tokens")),
+        output_tokens=_as_int(payload.get("output_tokens")),
+        cache_creation_input_tokens=_as_int(payload.get("cache_creation_input_tokens")),
+        cache_read_input_tokens=_as_int(payload.get("cache_read_input_tokens")),
+    )
 
 
 def _drop_leading_orphan_tool_results(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:

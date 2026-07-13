@@ -95,23 +95,31 @@ def _build_agent_loop(
     team.set_event_handler(event_handler)
     tools = build_workspace_tools(workspace, tasks, team=team)
     client = AnthropicModelClient(settings)
+    system_prompt = lambda: _system_prompt(
+        settings,
+        memory,
+        tasks,
+        prompts=prompts,
+        enabled_tools=tools.names(),
+    )
     return AgentLoop(
         client=client,
         tools=tools,
-        system_prompt=lambda: _system_prompt(
-            settings,
-            memory,
-            tasks,
-            prompts=prompts,
-            enabled_tools=tools.names(),
-        ),
+        system_prompt=system_prompt,
         on_event=event_handler,
         hooks=build_default_hooks(
             permission_hook=permission_manager,
         ),
         external_event_provider=lambda: team.consume_inbox_for_history(),
         before_model_call=_chain_before_model_call(
-            _make_context_compactor(context, client, prompts, event_handler),
+            _make_context_compactor(
+                context,
+                client,
+                prompts,
+                event_handler,
+                system_prompt,
+                tools.specs,
+            ),
             task_reminder,
         ),
     )
@@ -282,7 +290,10 @@ def _with_usage_recording(
         if event == "model_usage":
             tracker.record_usage(payload, event_agent, step)
             if context is not None and event_agent == LEAD_AGENT_NAME:
-                context.record_usage(payload)
+                if payload.get("usage_kind") == "compact":
+                    context.record_auxiliary_usage(payload)
+                else:
+                    context.record_usage(payload)
             if context is not None:
                 payload["context_tokens"] = context.current_context_tokens
             payload.update(tracker.as_payload())
@@ -296,11 +307,19 @@ def _make_context_compactor(
     client: AnthropicModelClient,
     prompts: PromptManager,
     event_handler,
+    system_prompt_provider,
+    tool_specs_provider,
 ):
     if context is None:
         return None
 
     def compact(messages: list[dict[str, Any]], step: int) -> None:
+        estimated_tokens = context.prepare_request(
+            system_prompt_provider(),
+            messages,
+            tool_specs_provider(),
+        )
+        event_handler("context_estimate", {"step": step, "context_tokens": estimated_tokens})
         if not context.needs_compact(messages):
             return
         before_tokens = context.current_context_tokens
@@ -309,8 +328,20 @@ def _make_context_compactor(
             {"step": step, "context_tokens": before_tokens, "threshold": context.compact_threshold},
         )
         context.replace_history(messages)
-        context.compact(client, prompts)
+        context.compact(
+            client,
+            prompts,
+            on_usage=lambda usage: event_handler(
+                "model_usage",
+                {"step": step, "usage_kind": "compact", **usage},
+            ),
+        )
         messages[:] = context.history
+        context.prepare_request(
+            system_prompt_provider(),
+            messages,
+            tool_specs_provider(),
+        )
         event_handler(
             "context_compact_finish",
             {

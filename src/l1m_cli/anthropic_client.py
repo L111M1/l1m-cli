@@ -64,9 +64,9 @@ class AnthropicModelClient:
                 stream_obj = self._client.messages.stream(**kwargs)
                 with _stream_context(stream_obj) as stream:
                     for event in stream:
-                        text_delta = _stream_text_delta(event)
-                        if text_delta and on_output_token_delta is not None:
-                            on_output_token_delta(_estimate_text_tokens(text_delta))
+                        output_delta = _stream_output_delta(event)
+                        if output_delta and on_output_token_delta is not None:
+                            on_output_token_delta(_estimate_text_tokens(output_delta))
                     return stream.get_final_message()
             except Exception as exc:
                 last_exc = exc
@@ -119,28 +119,40 @@ def _stream_context(stream_obj: Any) -> Any:
 
 
 def _stream_text_delta(event: Any) -> str:
+    return _stream_output_delta(event, fields=("text",))
+
+
+def _stream_output_delta(
+    event: Any,
+    fields: tuple[str, ...] = ("text", "thinking", "partial_json", "signature"),
+) -> str:
     delta = getattr(event, "delta", None)
     if delta is not None:
-        text = getattr(delta, "text", None)
-        if isinstance(text, str):
-            return text
+        for field in fields:
+            value = getattr(delta, field, None)
+            if isinstance(value, str):
+                return value
         if isinstance(delta, dict):
-            text = delta.get("text")
-            if isinstance(text, str):
-                return text
+            for field in fields:
+                value = delta.get(field)
+                if isinstance(value, str):
+                    return value
 
-    text = getattr(event, "text", None)
-    if isinstance(text, str):
-        return text
+    for field in fields:
+        value = getattr(event, field, None)
+        if isinstance(value, str):
+            return value
     if isinstance(event, dict):
         delta = event.get("delta")
         if isinstance(delta, dict):
-            text = delta.get("text")
-            if isinstance(text, str):
-                return text
-        text = event.get("text")
-        if isinstance(text, str):
-            return text
+            for field in fields:
+                value = delta.get(field)
+                if isinstance(value, str):
+                    return value
+        for field in fields:
+            value = event.get(field)
+            if isinstance(value, str):
+                return value
     return ""
 
 

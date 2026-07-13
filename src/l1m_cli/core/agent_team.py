@@ -599,7 +599,10 @@ class AgentTeam:
             payload["turn_output_tokens"] = context.turn_output_tokens
             payload["turn_total_tokens"] = context.turn_total_tokens
         if event == "model_usage":
-            context.record_usage(payload)
+            if payload.get("usage_kind") == "compact":
+                context.record_auxiliary_usage(payload)
+            else:
+                context.record_usage(payload)
             payload["context_tokens"] = context.current_context_tokens
             payload["turn_input_tokens"] = context.turn_input_tokens
             payload["turn_output_tokens"] = context.turn_output_tokens
@@ -626,7 +629,16 @@ class AgentTeam:
             {"step": step, "context_tokens": before_tokens, "threshold": context.compact_threshold},
         )
         context.replace_history(messages)
-        context.compact(client, self.prompts)
+        context.compact(
+            client,
+            self.prompts,
+            on_usage=lambda usage: self._record_and_emit_agent_event(
+                context,
+                name,
+                "model_usage",
+                {"step": step, "usage_kind": "compact", **usage},
+            ),
+        )
         messages[:] = context.history
         context.prepare_request(system_prompt, messages, tool_specs)
         self._emit_agent_event(

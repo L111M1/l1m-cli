@@ -383,7 +383,10 @@ def _with_usage_recording(
         if event == "model_usage":
             tracker.record_usage(payload, event_agent, step)
             if context is not None and event_agent == LEAD_AGENT_NAME:
-                context.record_usage(payload)
+                if payload.get("usage_kind") == "compact":
+                    context.record_auxiliary_usage(payload)
+                else:
+                    context.record_usage(payload)
             if context is not None:
                 payload["context_tokens"] = context.current_context_tokens
             payload.update(tracker.as_payload())
@@ -418,7 +421,14 @@ def _make_context_compactor(
             {"step": step, "context_tokens": before_tokens, "threshold": context.compact_threshold},
         )
         context.replace_history(messages)
-        context.compact(client, prompts)
+        context.compact(
+            client,
+            prompts,
+            on_usage=lambda usage: event_handler(
+                "model_usage",
+                {"step": step, "usage_kind": "compact", **usage},
+            ),
+        )
         messages[:] = context.history
         context.prepare_request(
             system_prompt_provider(),
