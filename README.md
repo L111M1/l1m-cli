@@ -1,6 +1,6 @@
 # L1m CLI
 
-一个学习用的 Python CLI Agent demo。
+Python CLI Agent
 
 当前重点：
 - 使用 Anthropic 官方 Python SDK 调用模型。
